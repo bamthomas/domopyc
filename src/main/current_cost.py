@@ -20,11 +20,9 @@ try:
             if line:
                 xml_data = XML(line, XMLParser())
                 if len(xml_data) >= 7 and xml_data[2].tag == 'time' and xml_data[7].tag == 'ch1':
-                    time_array = xml_data[2].text.split(':')
-                    timestamp = datetime.combine(datetime.today(), time(int(time_array[0]), int(time_array[1]), int(time_array[2])))
                     power = int(xml_data[7][0].text)
-                    print '%s : %s (%s°C)' % (timestamp, power, xml_data[3].text)
-                    cur.execute('insert into current_cost (timestamp, watt, temperature) values (%s, %s, %s)', (timestamp, power, xml_data[3].text))
+                    print '%s : %s (%s°C)' % (datetime.now(), power, xml_data[3].text)
+                    cur.execute('insert into current_cost (watt, temperature) values (%s, %s)', (power, xml_data[3].text))
 
 finally:
     print 'closing'
