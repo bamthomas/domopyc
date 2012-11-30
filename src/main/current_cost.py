@@ -50,7 +50,7 @@ class RedisSubscriber(Thread):
                 self.callback_func(loads(item['data']))
 
     def stop(self):
-        self.pubsub.unsubscribe()
+        self.pubsub.unsubscribe([CURRENT_COST])
 
 if __name__ == '__main__':
     current_cost = CurrentCostReader(REDIS)

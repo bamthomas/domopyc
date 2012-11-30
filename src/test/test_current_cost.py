@@ -23,7 +23,9 @@ class RedisSubscriberTest(unittest.TestCase):
 
     def test_reader(self):
         expected = {'date': datetime.now().isoformat(), 'watt': '123', 'temperature': '23.4'}
+
         self.myredis.publish(CURRENT_COST, dumps(expected))
+
         event = self.queue.get()
         self.assertIsNotNone(event)
         self.assertDictEqual(event, expected)
