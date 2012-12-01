@@ -1,0 +1,39 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Current Cost</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+    <script src="{{ url_for('static', filename='smoothie.js') }}" type="text/javascript"></script>
+
+</head>
+<body>
+<p><b>Current Cost</b></p>
+
+<canvas id="mycanvas" width="1000" height="400"></canvas>
+<p>Valeur Courante : <span id="current"></span></p>
+
+<script type="text/javascript">
+    var smoothie = new SmoothieChart({
+        millisPerPixel: '500',
+        grid: { fillStyle: '#ffffff', strokeStyle: '#777777', lineWidth: 1, millisPerLine: 10000, verticalSections: 4 },
+        labels: { fillStyle: '#000000' }
+    });
+    smoothie.streamTo(document.getElementById("mycanvas"));
+    var line = new TimeSeries();
+    function sse() {
+        var source = new EventSource('/stream');
+        source.onmessage = function (e) {
+            item = JSON.parse(e.data);
+            line.append(new Date().getTime(), item.watt);
+            $("#current").replaceWith('<span id="current">' + item.watt + '</span>');
+        };
+    }
+    smoothie.addTimeSeries(line, { strokeStyle: 'rgb(0, 255, 0)', fillStyle: 'rgba(0, 255, 0, 0.4)', lineWidth: 3 });
+    sse();
+</script>
+
+</body>
+</html>
+
+
