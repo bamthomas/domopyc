@@ -1,5 +1,5 @@
 from Queue import Queue, Empty
-from json import dumps
+from json import dumps, loads
 import unittest
 from current_cost import CURRENT_COST, RedisSubscriber, CurrentCostReader
 from datetime import datetime
@@ -28,7 +28,7 @@ class RedisSubscriberTest(unittest.TestCase):
 
         event = self.queue.get()
         self.assertIsNotNone(event)
-        self.assertDictEqual(event, expected)
+        self.assertDictEqual(loads(event), expected)
 
 class MockSerial():
     def __init__(self): self.readqueue = Queue()
@@ -58,5 +58,14 @@ class CurrentCostReaderTest(unittest.TestCase):
 
         self.assertDictEqual(self.queue.get(timeout=1), {'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'})
 
+class CurrentCostModuleTest(unittest.TestCase):
+    def setUp(self):
+        current_cost.now = lambda: datetime(2012, 12, 13, 14, 15, 16)
 
+    def test_save_event_redis_function(self):
+        current_cost.redis_save_event(dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'}))
+
+        myredis = redis.Redis()
+        self.assertTrue(int(myredis.ttl('current_cost_2012-12-13')) <=  5 * 24 * 3600)
+        self.assertEqual(myredis.lpop('current_cost_2012-12-13'), dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'}))
 

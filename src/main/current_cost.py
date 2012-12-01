@@ -43,7 +43,7 @@ class RedisSubscriber(threading.Thread):
     def wait_messages(self):
         for item in self.pubsub.listen():
             if item['type'] == 'message':
-                self.callback_func(loads(item['data']))
+                self.callback_func(item['data'])
 
     def stop(self):
         self.pubsub.unsubscribe([CURRENT_COST])
@@ -53,8 +53,19 @@ def now(): return datetime.now()
 def redis_publish(channel, event_dict):
     REDIS.publish(channel, dumps(event_dict))
 
+def redis_save_event(json_event):
+    key = 'current_cost_' + now().strftime('%Y-%m-%d')
+    REDIS.lpush(key, json_event)
+    REDIS.expire(key, 5 * 24 * 3600)
+
 if __name__ == '__main__':
     serial_drv = serial.Serial('/dev/ttyUSB0', baudrate=57600,
             bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=10)
     current_cost = CurrentCostReader(serial_drv, redis_publish)
     current_cost.start()
+
+    redis_save_consumer = RedisSubscriber(REDIS, redis_save_event)
+    redis_save_consumer.start()
+
+    current_cost.join()
+    
