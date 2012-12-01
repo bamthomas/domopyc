@@ -1,7 +1,7 @@
 # coding=utf-8
 from datetime import datetime
-from json import loads
-from threading import Thread, Event
+from json import loads, dumps
+import threading
 from xml.etree.ElementTree import XML, XMLParser
 import serial
 import redis
@@ -11,36 +11,32 @@ REDIS = redis.Redis()
 __author__ = 'bruno'
 
 
-class CurrentCostReader(Thread):
-    def __init__(self, myredis):
+class CurrentCostReader(threading.Thread):
+    def __init__(self, serial_drv, publish_func):
         super(CurrentCostReader, self).__init__(target=self.read_sensor)
-        self.serial = serial.Serial('/dev/ttyUSB0', baudrate=57600,
-            bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=10)
-        self.redis = myredis
-        self.stop = Event()
+        self.serial_drv = serial_drv
+        self.publish = publish_func
+        self.stop_asked = threading.Event()
 
     def read_sensor(self):
         try:
-            while not self.stop.is_set():
-                line = self.serial.readline()
+            while not self.stop_asked.is_set():
+                line = self.serial_drv.readline()
                 if line:
                     xml_data = XML(line, XMLParser())
                     if len(xml_data) >= 7 and xml_data[2].tag == 'time' and xml_data[7].tag == 'ch1':
                         power = int(xml_data[7][0].text)
-                        print '%s : %s (%s°C)' % (datetime.now(), power, xml_data[3].text)
-                        self.redis.publish(CURRENT_COST,{'timestamp':datetime.now().isoformat(), 'watt':power, 'temperature':xml_data[3].text})
+                        self.publish(CURRENT_COST,{'date':now().isoformat(), 'watt':power, 'temperature':xml_data[3].text})
         finally:
-            print 'closing'
-            self.serial.close()
+            self.serial_drv.close()
 
     def stop(self):
-        self.stop.set()
-        
-class RedisSubscriber(Thread):
+        self.stop_asked.set()
+
+class RedisSubscriber(threading.Thread):
     def __init__(self, redis, callback_func):
         super(RedisSubscriber, self).__init__(target=self.wait_messages)
         self.callback_func = callback_func
-        self.redis = redis
         self.pubsub = redis.pubsub()
         self.pubsub.subscribe([CURRENT_COST])
 
@@ -52,6 +48,13 @@ class RedisSubscriber(Thread):
     def stop(self):
         self.pubsub.unsubscribe([CURRENT_COST])
 
+def now(): return datetime.now()
+
+def redis_publish(channel, event_dict):
+    REDIS.publish(channel, dumps(event_dict))
+
 if __name__ == '__main__':
-    current_cost = CurrentCostReader(REDIS)
+    serial_drv = serial.Serial('/dev/ttyUSB0', baudrate=57600,
+            bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=10)
+    current_cost = CurrentCostReader(serial_drv, redis_publish)
     current_cost.start()
