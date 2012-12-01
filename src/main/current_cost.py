@@ -62,8 +62,8 @@ def redis_publish(channel, event_dict):
 
 def redis_save_event(json_event):
     key = 'current_cost_' + now().strftime('%Y-%m-%d')
-    REDIS.lpush(key, json_event)
-    REDIS.expire(key, 5 * 24 * 3600)
+    if REDIS.lpush(key, json_event) == 1:
+        REDIS.expire(key, 5 * 24 * 3600)
 
 if __name__ == '__main__':
     serial_drv = serial.Serial('/dev/ttyUSB0', baudrate=57600,

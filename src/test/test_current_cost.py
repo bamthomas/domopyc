@@ -67,11 +67,17 @@ class CurrentCostReaderTest(unittest.TestCase):
 class CurrentCostModuleTest(unittest.TestCase):
     def setUp(self):
         current_cost.now = lambda: datetime(2012, 12, 13, 14, 15, 16)
+        self.myredis = redis.Redis()
+        self.myredis.delete('current_cost_2012-12-13')
 
     def test_save_event_redis_function(self):
         current_cost.redis_save_event(dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'}))
 
-        myredis = redis.Redis()
-        self.assertTrue(int(myredis.ttl('current_cost_2012-12-13')) <=  5 * 24 * 3600)
-        self.assertEqual(myredis.lpop('current_cost_2012-12-13'), dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'}))
+        self.assertTrue(int(self.myredis.ttl('current_cost_2012-12-13')) <=  5 * 24 * 3600)
+        self.assertEqual(self.myredis.lpop('current_cost_2012-12-13'), dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'}))
 
+    def test_save_event_redis_function_no_ttl_if_not_first_element(self):
+        self.myredis.lpush('current_cost_2012-12-13', 'not used')
+        current_cost.redis_save_event(dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'}))
+
+        self.assertIsNone(self.myredis.ttl('current_cost_2012-12-13'))
