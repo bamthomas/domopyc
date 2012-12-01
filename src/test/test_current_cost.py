@@ -58,6 +58,12 @@ class CurrentCostReaderTest(unittest.TestCase):
 
         self.assertDictEqual(self.queue.get(timeout=1), {'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'})
 
+    def test_read_sensor_xml_error_dont_break_loop(self):
+        self.mockserial.send('<malformed XML>')
+        self.mockserial.send('<msg><src>CC128-v1.29</src><dsb>00302</dsb><time>02:57:28</time><tmpr>21.4</tmpr><sensor>1</sensor><id>00126</id><type>1</type><ch1><watts>00305</watts></ch1></msg>')
+
+        self.assertDictEqual(self.queue.get(timeout=1), {'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'})
+
 class CurrentCostModuleTest(unittest.TestCase):
     def setUp(self):
         current_cost.now = lambda: datetime(2012, 12, 13, 14, 15, 16)

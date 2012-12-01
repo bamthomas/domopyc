@@ -1,8 +1,9 @@
 # coding=utf-8
 from datetime import datetime
 from json import loads, dumps
+import logging
 import threading
-from xml.etree.ElementTree import XML, XMLParser
+from xml.etree.ElementTree import XML, XMLParser, ParseError
 import serial
 import redis
 
@@ -10,6 +11,8 @@ CURRENT_COST = 'current_cost'
 REDIS = redis.Redis()
 __author__ = 'bruno'
 
+logging.basicConfig(format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
+LOGGER = logging.getLogger('current_cost')
 
 class CurrentCostReader(threading.Thread):
     def __init__(self, serial_drv, publish_func):
@@ -23,10 +26,14 @@ class CurrentCostReader(threading.Thread):
             while not self.stop_asked.is_set():
                 line = self.serial_drv.readline()
                 if line:
-                    xml_data = XML(line, XMLParser())
-                    if len(xml_data) >= 7 and xml_data[2].tag == 'time' and xml_data[7].tag == 'ch1':
-                        power = int(xml_data[7][0].text)
-                        self.publish(CURRENT_COST,{'date':now().isoformat(), 'watt':power, 'temperature':xml_data[3].text})
+                    try:
+                        xml_data = XML(line, XMLParser())
+
+                        if len(xml_data) >= 7 and xml_data[2].tag == 'time' and xml_data[7].tag == 'ch1':
+                            power = int(xml_data[7][0].text)
+                            self.publish(CURRENT_COST,{'date':now().isoformat(), 'watt':power, 'temperature':xml_data[3].text})
+                    except ParseError as xml_parse_error:
+                        LOGGER.exception(xml_parse_error)
         finally:
             self.serial_drv.close()
 
@@ -68,4 +75,4 @@ if __name__ == '__main__':
     redis_save_consumer.start()
 
     current_cost.join()
-    
+
