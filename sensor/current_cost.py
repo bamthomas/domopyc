@@ -28,7 +28,6 @@ class CurrentCostReader(threading.Thread):
                 if line:
                     try:
                         xml_data = XML(line, XMLParser())
-
                         if len(xml_data) >= 7 and xml_data[2].tag == 'time' and xml_data[7].tag == 'ch1':
                             power = int(xml_data[7][0].text)
                             self.publish({'date':now().isoformat(), 'watt':power, 'temperature':xml_data[3].text})
@@ -45,16 +44,26 @@ def now(): return datetime.now()
 def redis_publish(event_dict):
     REDIS.publish(CURRENT_COST, dumps(event_dict))
 
-def redis_subscribe_loop(pubsub, callback_func):
-    pubsub.subscribe(CURRENT_COST)
-    for item in pubsub.listen():
-            if item['type'] == 'message':
-                callback_func(item['data'])
+class RedisSubscriber(threading.Thread):
+    def __init__(self, redis, message_handler):
+        super(RedisSubscriber, self).__init__(target=self.wait_messages)
+        self.message_handler = message_handler
+        self.pubsub = redis.pubsub()
+        self.pubsub.subscribe(CURRENT_COST)
 
-def redis_save_event(json_event):
-    key = 'current_cost_' + now().strftime('%Y-%m-%d')
-    if REDIS.lpush(key, json_event) == 1:
-        REDIS.expire(key, 5 * 24 * 3600)
+    def wait_messages(self):
+        for item in self.pubsub.listen():
+            if item['type'] == 'message':
+                self.message_handler.handle(item['data'])
+
+    def stop(self):
+        self.pubsub.unsubscribe(CURRENT_COST)
+
+class AverageMessageHandler(object):
+    def handle(self, json_message):
+        key = 'current_cost_' + now().strftime('%Y-%m-%d')
+        if REDIS.lpush(key, json_message) == 1:
+            REDIS.expire(key, 5 * 24 * 3600)
 
 if __name__ == '__main__':
     serial_drv = serial.Serial('/dev/ttyUSB0', baudrate=57600,
@@ -62,7 +71,8 @@ if __name__ == '__main__':
     current_cost = CurrentCostReader(serial_drv, redis_publish)
     current_cost.start()
 
-    redis_save_consumer = threading.Thread(target=redis_subscribe_loop, args=(REDIS.pubsub(), redis_save_event))
+    redis_save_consumer = RedisSubscriber(REDIS, AverageMessageHandler())
+
     redis_save_consumer.start()
 
     current_cost.join()

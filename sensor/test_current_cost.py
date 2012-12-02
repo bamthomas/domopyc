@@ -9,26 +9,28 @@ import redis
 
 __author__ = 'bruno'
 
-class RedisSubscriberTest(unittest.TestCase):
+class RedisSubscribeLoopTest(unittest.TestCase):
     def setUp(self):
-        self.queue = Queue()
-        def test_callback(event):
-            self.queue.put(event)
+        class TestMessageHandler(object):
+            queue = Queue()
+            def handle(self, message):
+                self.queue.put(message)
+        self.message_handler = TestMessageHandler()
         self.myredis = redis.Redis()
         self.pubsub = self.myredis.pubsub()
-        self.subscriber = Thread(target=current_cost.redis_subscribe_loop, args=(self.pubsub, test_callback))
+        self.subscriber = current_cost.RedisSubscriber(self.myredis, self.message_handler)
         self.subscriber.start()
 
     def tearDown(self):
-        self.pubsub.unsubscribe(CURRENT_COST)
+        self.subscriber.stop()
         self.subscriber.join()
 
-    def test_reader(self):
+    def test_subscribe_loop(self):
         expected = {'date': datetime.now().isoformat(), 'watt': '123', 'temperature': '23.4'}
 
         self.myredis.publish(CURRENT_COST, dumps(expected))
 
-        event = self.queue.get()
+        event = self.message_handler.queue.get()
         self.assertIsNotNone(event)
         self.assertDictEqual(loads(event), expected)
 
@@ -71,15 +73,16 @@ class CurrentCostModuleTest(unittest.TestCase):
         current_cost.now = lambda: datetime(2012, 12, 13, 14, 15, 16)
         self.myredis = redis.Redis()
         self.myredis.delete('current_cost_2012-12-13')
+        self.message_handler = current_cost.AverageMessageHandler()
 
     def test_save_event_redis_function(self):
-        current_cost.redis_save_event(dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'}))
+        self.message_handler.handle(dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'}))
 
         self.assertTrue(int(self.myredis.ttl('current_cost_2012-12-13')) <=  5 * 24 * 3600)
         self.assertEqual(self.myredis.lpop('current_cost_2012-12-13'), dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'}))
 
     def test_save_event_redis_function_no_ttl_if_not_first_element(self):
         self.myredis.lpush('current_cost_2012-12-13', 'not used')
-        current_cost.redis_save_event(dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'}))
+        self.message_handler.handle(dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'}))
 
         self.assertIsNone(self.myredis.ttl('current_cost_2012-12-13'))
