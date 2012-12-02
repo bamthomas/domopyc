@@ -7,7 +7,7 @@ __author__ = 'bruno'
 REDIS = redis.Redis()
 app = flask.Flask(__name__)
 
-def event_stream():
+def message_stream():
     pubsub = REDIS.pubsub()
     pubsub.subscribe('current_cost')
     for message in pubsub.listen():
@@ -15,7 +15,7 @@ def event_stream():
 
 @app.route('/stream')
 def stream():
-    return flask.Response(event_stream(), mimetype="text/event-stream")
+    return flask.Response(message_stream(), mimetype="text/event-stream")
 
 @app.route('/')
 def home():

@@ -1,7 +1,8 @@
 from Queue import Queue, Empty
 from json import dumps, loads
+from threading import Thread
 import unittest
-from current_cost import CURRENT_COST, RedisSubscriber, CurrentCostReader
+from current_cost import CURRENT_COST, CurrentCostReader
 from datetime import datetime
 import current_cost
 import redis
@@ -14,11 +15,12 @@ class RedisSubscriberTest(unittest.TestCase):
         def test_callback(event):
             self.queue.put(event)
         self.myredis = redis.Redis()
-        self.subscriber = RedisSubscriber(self.myredis, test_callback)
+        self.pubsub = self.myredis.pubsub()
+        self.subscriber = Thread(target=current_cost.redis_subscribe_loop, args=(self.pubsub, test_callback))
         self.subscriber.start()
 
     def tearDown(self):
-        self.subscriber.stop()
+        self.pubsub.unsubscribe(CURRENT_COST)
         self.subscriber.join()
 
     def test_reader(self):
@@ -43,7 +45,7 @@ class CurrentCostReaderTest(unittest.TestCase):
     def setUp(self):
         current_cost.now = lambda: datetime(2012, 12, 13, 14, 15, 16)
         self.queue = Queue()
-        def publish_func_test(channel, event):
+        def publish_func_test(event):
             self.queue.put(event)
         self.mockserial = MockSerial()
         self.current_cost_reader = CurrentCostReader(self.mockserial, publish_func_test)
