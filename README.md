@@ -1,7 +1,7 @@
 # Description
 
 Here are some python scripts running with Current Cost sensor (http://www.currentcost.com/) for :
-- sending power data from holiday home to your NAS at home on a quarter hour basis
+- sending power data (average on a quarter hour basis) once a day from holiday home to your NAS at home 
 - "debugging" locally what consummes the more power
 
 The data are read from serial XML input according to the specification http://www.currentcost.com/cc128/xml.htm
