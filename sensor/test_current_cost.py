@@ -60,29 +60,48 @@ class CurrentCostReaderTest(unittest.TestCase):
     def test_read_sensor(self):
         self.mockserial.send('<msg><src>CC128-v1.29</src><dsb>00302</dsb><time>02:57:28</time><tmpr>21.4</tmpr><sensor>1</sensor><id>00126</id><type>1</type><ch1><watts>00305</watts></ch1></msg>')
 
-        self.assertDictEqual(self.queue.get(timeout=1), {'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'})
+        self.assertDictEqual(self.queue.get(timeout=1), {'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':21.4})
 
     def test_read_sensor_xml_error_dont_break_loop(self):
         self.mockserial.send('<malformed XML>')
         self.mockserial.send('<msg><src>CC128-v1.29</src><dsb>00302</dsb><time>02:57:28</time><tmpr>21.4</tmpr><sensor>1</sensor><id>00126</id><type>1</type><ch1><watts>00305</watts></ch1></msg>')
 
-        self.assertDictEqual(self.queue.get(timeout=1), {'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'})
+        self.assertDictEqual(self.queue.get(timeout=1), {'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':21.4})
 
-class CurrentCostModuleTest(unittest.TestCase):
+class AverageMessageHandlerTestWithoutAverage(unittest.TestCase):
     def setUp(self):
-        current_cost.now = lambda: datetime(2012, 12, 13, 14, 15, 16)
         self.myredis = redis.Redis()
         self.myredis.delete('current_cost_2012-12-13')
         self.message_handler = current_cost.AverageMessageHandler()
 
     def test_save_event_redis_function(self):
-        self.message_handler.handle(dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'}))
+        self.message_handler.handle(dumps({'date': '2012-12-13T21:59:10', 'watt': 305, 'temperature':21.4}))
 
         self.assertTrue(int(self.myredis.ttl('current_cost_2012-12-13')) <=  5 * 24 * 3600)
-        self.assertEqual(self.myredis.lpop('current_cost_2012-12-13'), dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'}))
+        self.assertEqual(self.myredis.lpop('current_cost_2012-12-13'), dumps({'date': '2012-12-13T21:59:10', 'watt': 305, 'temperature':21.4}))
 
     def test_save_event_redis_function_no_ttl_if_not_first_element(self):
         self.myredis.lpush('current_cost_2012-12-13', 'not used')
-        self.message_handler.handle(dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':'21.4'}))
+        self.message_handler.handle(dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':21.4}))
 
         self.assertIsNone(self.myredis.ttl('current_cost_2012-12-13'))
+
+class AverageMessageHandlerTest(unittest.TestCase):
+    def setUp(self):
+        current_cost.now = lambda: datetime(2012, 12, 13, 14, 0, 0)
+        self.myredis = redis.Redis()
+        self.myredis.delete('current_cost_2012-12-13')
+        self.message_handler = current_cost.AverageMessageHandler(average_period_minutes=10)
+
+    def test_average(self):
+        self.message_handler.handle(dumps({'date': '2012-12-13T14:00:07', 'watt': 100, 'temperature':20.0}))
+        self.assertEquals(0, self.myredis.llen('current_cost_2012-12-13'))
+
+        current_cost.now = lambda: datetime(2012, 12, 13, 14, 3, 0)
+        self.message_handler.handle(dumps({'date': '2012-12-13T14:03:07', 'watt': 200, 'temperature':30.0}))
+        self.assertEquals(0, self.myredis.llen('current_cost_2012-12-13'))
+
+        current_cost.now = lambda: datetime(2012, 12, 13, 14, 10, 1)
+        self.message_handler.handle(dumps({'date': '2012-12-13T14:10:07', 'watt': 900, 'temperature':10.0}))
+
+        self.assertEqual(self.myredis.lpop('current_cost_2012-12-13'), dumps({'date': '2012-12-13T14:10:07', 'watt': 400, 'temperature':20.0}))

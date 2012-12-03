@@ -1,9 +1,11 @@
 # coding=utf-8
-from datetime import datetime
+from datetime import datetime, timedelta
 from json import loads, dumps
+from json.decoder import JSONDecoder
 import logging
 import threading
 from xml.etree.ElementTree import XML, XMLParser, ParseError
+import iso8601
 import serial
 import redis
 
@@ -30,7 +32,7 @@ class CurrentCostReader(threading.Thread):
                         xml_data = XML(line, XMLParser())
                         if len(xml_data) >= 7 and xml_data[2].tag == 'time' and xml_data[7].tag == 'ch1':
                             power = int(xml_data[7][0].text)
-                            self.publish({'date':now().isoformat(), 'watt':power, 'temperature':xml_data[3].text})
+                            self.publish({'date':now().isoformat(), 'watt':power, 'temperature':float(xml_data[3].text)})
                     except ParseError as xml_parse_error:
                         LOGGER.exception(xml_parse_error)
         finally:
@@ -60,10 +62,30 @@ class RedisSubscriber(threading.Thread):
         self.pubsub.unsubscribe(CURRENT_COST)
 
 class AverageMessageHandler(object):
-    def handle(self, json_message):
-        key = 'current_cost_' + now().strftime('%Y-%m-%d')
+    def __init__(self, average_period_minutes=0):
+        self.delta_minutes = timedelta(minutes=average_period_minutes)
+        self.next_save_date = now() + self.delta_minutes
+        self.messages = []
+
+    def push_redis(self, key, json_message):
         if REDIS.lpush(key, json_message) == 1:
             REDIS.expire(key, 5 * 24 * 3600)
+
+    def handle(self, json_message):
+        message = loads(json_message)
+        message_date = iso8601.parse_date(message['date'])
+        key = 'current_cost_' + message_date.strftime('%Y-%m-%d')
+        self.messages.append(message)
+        if now() > self.next_save_date:
+            self.push_redis(key, self.get_average_json_message(message['date']))
+            self.next_save_date = self.next_save_date + self.delta_minutes
+            self.messages = []
+
+    def get_average_json_message(self, date):
+        watt_and_temp = map(lambda msg: (msg['watt'],msg['temperature']), self.messages)
+        watt_sum, temp_sum = reduce(lambda (x,t),(y,v): (x+y, t+v), watt_and_temp)
+        nb_messages = len(self.messages)
+        return dumps({'date': date, 'watt': watt_sum/ nb_messages, 'temperature': temp_sum / nb_messages})
 
 if __name__ == '__main__':
     serial_drv = serial.Serial('/dev/ttyUSB0', baudrate=57600,
@@ -71,8 +93,7 @@ if __name__ == '__main__':
     current_cost = CurrentCostReader(serial_drv, redis_publish)
     current_cost.start()
 
-    redis_save_consumer = RedisSubscriber(REDIS, AverageMessageHandler())
-
+    redis_save_consumer = RedisSubscriber(REDIS, AverageMessageHandler(10))
     redis_save_consumer.start()
 
     current_cost.join()
