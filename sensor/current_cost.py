@@ -74,7 +74,7 @@ class AverageMessageHandler(object):
     def handle(self, json_message):
         message = loads(json_message)
         message_date = iso8601.parse_date(message['date'])
-        key = 'current_cost_' + message_date.strftime('%Y-%m-%d')
+        key = 'current_cost_%s' % message_date.strftime('%Y-%m-%d')
         self.messages.append(message)
         if now() >= self.next_save_date:
             self.push_redis(key, self.get_average_json_message(message['date']))
