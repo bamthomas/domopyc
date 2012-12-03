@@ -1,6 +1,5 @@
 from Queue import Queue, Empty
 from json import dumps, loads
-from threading import Thread
 import unittest
 from current_cost import CURRENT_COST, CurrentCostReader
 from datetime import datetime
