@@ -85,7 +85,8 @@ class AverageMessageHandler(object):
         watt_and_temp = map(lambda msg: (msg['watt'],msg['temperature']), self.messages)
         watt_sum, temp_sum = reduce(lambda (x,t),(y,v): (x+y, t+v), watt_and_temp)
         nb_messages = len(self.messages)
-        return dumps({'date': date, 'watt': watt_sum/ nb_messages, 'temperature': temp_sum / nb_messages, 'nb_data': nb_messages})
+        return dumps({'date': date, 'watt': watt_sum/ nb_messages, 'temperature': temp_sum / nb_messages,
+                      'nb_data': nb_messages, 'minutes': int(self.delta_minutes.total_seconds()/60)})
 
 if __name__ == '__main__':
     serial_drv = serial.Serial('/dev/ttyUSB0', baudrate=57600,

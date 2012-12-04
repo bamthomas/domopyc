@@ -79,7 +79,8 @@ class AverageMessageHandlerTestWithoutAverage(unittest.TestCase):
         self.message_handler.handle(dumps({'date': '2012-12-13T21:59:10', 'watt': 305, 'temperature':21.4}))
 
         self.assertTrue(int(self.myredis.ttl('current_cost_2012-12-13')) <=  5 * 24 * 3600)
-        self.assertEqual(self.myredis.lpop('current_cost_2012-12-13'), dumps({'date': '2012-12-13T21:59:10', 'watt': 305, 'temperature':21.4, 'nb_data': 1}))
+        self.assertEqual(dumps({'date': '2012-12-13T21:59:10', 'watt': 305, 'temperature':21.4, 'nb_data': 1, 'minutes': 0}),
+            self.myredis.lpop('current_cost_2012-12-13'))
 
     def test_save_event_redis_function_no_ttl_if_not_first_element(self):
         self.myredis.lpush('current_cost_2012-12-13', 'not used')
@@ -107,4 +108,5 @@ class AverageMessageHandlerTest(unittest.TestCase):
         current_cost.now = lambda: datetime(2012, 12, 13, 14, 10, 1)
         self.message_handler.handle(dumps({'date': '2012-12-13T14:10:07', 'watt': 900, 'temperature':10.0}))
 
-        self.assertEqual(self.myredis.lpop('current_cost_2012-12-13'), dumps({'date': '2012-12-13T14:10:07', 'watt': 400, 'temperature':20.0, 'nb_data': 3}))
+        self.assertEqual(dumps({'date': '2012-12-13T14:10:07', 'watt': 400, 'temperature':20.0, 'nb_data': 3, 'minutes': 10}),
+            self.myredis.lpop('current_cost_2012-12-13'))
