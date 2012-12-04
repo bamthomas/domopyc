@@ -27,3 +27,6 @@ class ExportBatch(object):
 
     def add_headers(self, csv, message):
         csv.write(';'.join(message.keys())+ '\n')
+
+if __name__ == '__main__':
+    ExportBatch().create_csv_file()
