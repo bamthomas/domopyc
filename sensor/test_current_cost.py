@@ -70,8 +70,10 @@ class CurrentCostReaderTest(unittest.TestCase):
 class AverageMessageHandlerTestWithoutAverage(unittest.TestCase):
     def setUp(self):
         self.myredis = redis.Redis()
-        self.myredis.delete('current_cost_2012-12-13')
         self.message_handler = current_cost.AverageMessageHandler()
+
+    def tearDown(self):
+        self.myredis.delete('current_cost_2012-12-13')
 
     def test_save_event_redis_function(self):
         self.message_handler.handle(dumps({'date': '2012-12-13T21:59:10', 'watt': 305, 'temperature':21.4}))
@@ -89,8 +91,10 @@ class AverageMessageHandlerTest(unittest.TestCase):
     def setUp(self):
         current_cost.now = lambda: datetime(2012, 12, 13, 14, 0, 0)
         self.myredis = redis.Redis()
-        self.myredis.delete('current_cost_2012-12-13')
         self.message_handler = current_cost.AverageMessageHandler(average_period_minutes=10)
+
+    def tearDown(self):
+        self.myredis.delete('current_cost_2012-12-13')
 
     def test_average(self):
         self.message_handler.handle(dumps({'date': '2012-12-13T14:00:07', 'watt': 100, 'temperature':20.0}))

@@ -13,16 +13,16 @@ class ExportBatch(object):
         self.key = 'current_cost_%s' % date.strftime('%Y-%m-%d')
 
     def create_csv_file(self):
-        file_name = '%s.csv' % self.key
-        with open(join('/tmp', file_name), mode='w') as csv:
+        file_name = join('/tmp','%s.csv' % self.key)
+        with open(file_name, mode='w') as csv:
             json_message = REDIS.lpop(self.key)
             message = loads(json_message)
             self.add_headers(csv, message)
             csv.write(';'.join([str(v) for v in message.values()]) + '\n')
-            while message is not None:
+            while json_message is not None:
                 json_message = REDIS.lpop(self.key)
-                message = json_message is not None and loads(json_message) or None
-                if message: csv.write(';'.join([str(v) for v in message.values()]) + '\n')
+                if json_message: 
+		    csv.write(';'.join([str(v) for v in loads(json_message).values()]) + '\n')
         return file_name
 
     def add_headers(self, csv, message):
