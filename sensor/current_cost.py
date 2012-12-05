@@ -64,8 +64,11 @@ class RedisSubscriber(threading.Thread):
 class AverageMessageHandler(object):
     def __init__(self, average_period_minutes=0):
         self.delta_minutes = timedelta(minutes=average_period_minutes)
-        self.next_save_date = now() + self.delta_minutes
+        self.next_save_date = average_period_minutes == 0 and now() or self.next_plain(average_period_minutes, now())
         self.messages = []
+
+    def next_plain(self, minutes, dt):
+        return dt - timedelta(minutes=dt.minute % minutes - minutes, seconds=dt.second, microseconds=dt.microsecond)
 
     def push_redis(self, key, json_message):
         if REDIS.lpush(key, json_message) == 1:

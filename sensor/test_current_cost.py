@@ -90,12 +90,18 @@ class AverageMessageHandlerTestWithoutAverage(unittest.TestCase):
 
 class AverageMessageHandlerTest(unittest.TestCase):
     def setUp(self):
-        current_cost.now = lambda: datetime(2012, 12, 13, 14, 0, 0)
+        current_cost.now = lambda: datetime(2012, 12, 13, 14, 2, 0)
         self.myredis = redis.Redis()
         self.message_handler = current_cost.AverageMessageHandler(average_period_minutes=10)
 
     def tearDown(self):
         self.myredis.delete('current_cost_2012-12-13')
+
+    def test_next_plain(self):
+        _14h04 = datetime(2012, 12, 13, 14, 4, 0)
+        self.assertEquals(datetime(2012, 12, 13, 14, 10), self.message_handler.next_plain(10, _14h04))
+        self.assertEquals(datetime(2012, 12, 13, 14, 15), self.message_handler.next_plain(15, _14h04))
+        self.assertEquals(datetime(2012, 12, 13, 14, 5 ), self.message_handler.next_plain(5 , _14h04))
 
     def test_average(self):
         self.message_handler.handle(dumps({'date': '2012-12-13T14:00:07', 'watt': 100, 'temperature':20.0}))
@@ -105,7 +111,7 @@ class AverageMessageHandlerTest(unittest.TestCase):
         self.message_handler.handle(dumps({'date': '2012-12-13T14:03:07', 'watt': 200, 'temperature':30.0}))
         self.assertEquals(0, self.myredis.llen('current_cost_2012-12-13'))
 
-        current_cost.now = lambda: datetime(2012, 12, 13, 14, 10, 1)
+        current_cost.now = lambda: datetime(2012, 12, 13, 14, 10, 0, 1)
         self.message_handler.handle(dumps({'date': '2012-12-13T14:10:07', 'watt': 900, 'temperature':10.0}))
 
         self.assertEqual(dumps({'date': '2012-12-13T14:10:07', 'watt': 400, 'temperature':20.0, 'nb_data': 3, 'minutes': 10}),
