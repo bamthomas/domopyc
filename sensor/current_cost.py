@@ -24,20 +24,17 @@ class CurrentCostReader(threading.Thread):
         self.stop_asked = threading.Event()
 
     def read_sensor(self):
-        try:
-            while not self.stop_asked.is_set():
-                line = self.serial_drv.readline()
-                if line:
-                    try:
-                        xml_data = XML(line, XMLParser())
-                        power_element = xml_data.find('ch1/watts')
-                        if power_element is not None:
-                            power = int(power_element.text)
-                            self.publish({'date':now().isoformat(), 'watt':power, 'temperature':float(xml_data.find('tmpr').text)})
-                    except ParseError as xml_parse_error:
-                        LOGGER.exception(xml_parse_error)
-        finally:
-            self.serial_drv.close()
+        while not self.stop_asked.is_set():
+            line = self.serial_drv.readline()
+            if line:
+                try:
+                    xml_data = XML(line, XMLParser())
+                    power_element = xml_data.find('ch1/watts')
+                    if power_element is not None:
+                        power = int(power_element.text)
+                        self.publish({'date':now().isoformat(), 'watt':power, 'temperature':float(xml_data.find('tmpr').text)})
+                except ParseError as xml_parse_error:
+                    LOGGER.exception(xml_parse_error)
 
     def stop(self):
         self.stop_asked.set()
@@ -95,11 +92,13 @@ class AverageMessageHandler(object):
 if __name__ == '__main__':
     serial_drv = serial.Serial('/dev/ttyUSB0', baudrate=57600,
             bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=10)
-    current_cost = CurrentCostReader(serial_drv, redis_publish)
-    current_cost.start()
+    try:
+        current_cost = CurrentCostReader(serial_drv, redis_publish)
+        current_cost.start()
 
-    redis_save_consumer = RedisSubscriber(REDIS, AverageMessageHandler(10))
-    redis_save_consumer.start()
+        redis_save_consumer = RedisSubscriber(REDIS, AverageMessageHandler(10))
+        redis_save_consumer.start()
 
-    current_cost.join()
-
+        current_cost.join()
+    finally:
+        serial_drv.close()
