@@ -30,9 +30,10 @@ class CurrentCostReader(threading.Thread):
                 if line:
                     try:
                         xml_data = XML(line, XMLParser())
-                        if len(xml_data) >= 7 and xml_data[2].tag == 'time' and xml_data[7].tag == 'ch1':
-                            power = int(xml_data[7][0].text)
-                            self.publish({'date':now().isoformat(), 'watt':power, 'temperature':float(xml_data[3].text)})
+                        power_element = xml_data.find('ch1/watts')
+                        if power_element is not None:
+                            power = int(power_element.text)
+                            self.publish({'date':now().isoformat(), 'watt':power, 'temperature':float(xml_data.find('tmpr').text)})
                     except ParseError as xml_parse_error:
                         LOGGER.exception(xml_parse_error)
         finally:
