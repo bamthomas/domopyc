@@ -22,6 +22,17 @@ class ExportBatchCsvTest(unittest.TestCase):
             self.assertEquals('2012-12-13T16:10:07;420;123;22.0\n', csv.readline())
             self.assertEquals('2012-12-13T14:10:07;400;234;20.0\n', csv.readline())
 
+    def test_export_temp_csv_file_no_key_does_nothing(self):
+        self.assertIsNone(ExportBatch(date=datetime(2012, 12, 14)).create_csv_file())
+
+    def test_export_temp_csv_file_no_key_but_file_returns_file_name(self):
+        batch = ExportBatch(date=datetime(2012, 12, 15))
+        filename = join('/tmp','%s.csv' % batch.key)
+        with open(filename, 'w') as file:
+            file.writelines(['this;is;a;previous;temp;csv;file\n'])
+
+        self.assertEquals(batch.create_csv_file(), filename)
+
 
 class ExportBatchFtpSendTest(unittest.TestCase):
     def setUp(self):
@@ -41,6 +52,8 @@ class ExportBatchFtpSendTest(unittest.TestCase):
         self.assertEquals(self.server._interactions[:3], ['USER test\r\n', 'PASS pass\r\n', 'TYPE A\r\n'])
         self.assertEquals(self.server.files(join(DIR, basename(filename))), 'this is a line in the file\r\nthis is another line in the file' )
 
-
+    def test_send_ftp_none_filename_does_nothing(self):
+        ExportBatch().ftp_send(None)
+        self.assertEquals(len(self.server._interactions), 0)
 
 

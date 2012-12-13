@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from ftplib import FTP
 from json import loads
+import os
 from posixpath import join, basename
 import redis
 
@@ -20,6 +21,12 @@ class ExportBatch(object):
 
     def create_csv_file(self):
         file_name = join('/tmp','%s.csv' % self.key)
+
+        if REDIS.type(self.key) != 'list':
+            if os.path.isfile(file_name):
+                return file_name
+            else: return None
+
         with open(file_name, mode='w') as csv:
             json_message = REDIS.lpop(self.key)
             message = loads(json_message)
@@ -35,6 +42,7 @@ class ExportBatch(object):
         csv.write(';'.join(message.keys())+ '\n')
 
     def ftp_send(self, file_name, host=HOST, port=PORT, user=USER, passwd=PASS, dir=DIR):
+        if file_name is None: return
         ftp = FTP()
         try:
             ftp.connect(host=host, port=port)
@@ -45,7 +53,8 @@ class ExportBatch(object):
             ftp.close()
 
 if __name__ == '__main__':
-    batch = ExportBatch()
-    file_name = batch.create_csv_file()
-    batch.ftp_send(file_name)
+    for days_before in xrange(1, 5):
+        batch = ExportBatch(date=datetime.now() - timedelta(days=days_before))
+        file_name = batch.create_csv_file()
+        batch.ftp_send(file_name)
 
