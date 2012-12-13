@@ -1,11 +1,17 @@
 from datetime import datetime, timedelta
+from ftplib import FTP
 from json import loads
-from posixpath import join
+from posixpath import join, basename
 import redis
 
 __author__ = 'bruno'
 
 REDIS = redis.Redis()
+USER = 'current_cost'
+PASS = 'current_cost'
+DIR  = 'current_cost'
+HOST = '192.168.0.10'
+PORT = 21
 
 class ExportBatch(object):
 
@@ -22,11 +28,24 @@ class ExportBatch(object):
             while json_message is not None:
                 json_message = REDIS.lpop(self.key)
                 if json_message: 
-		    csv.write(';'.join([str(v) for v in loads(json_message).values()]) + '\n')
+                    csv.write(';'.join([str(v) for v in loads(json_message).values()]) + '\n')
         return file_name
 
     def add_headers(self, csv, message):
         csv.write(';'.join(message.keys())+ '\n')
 
+    def ftp_send(self, file_name, host=HOST, port=PORT, user=USER, passwd=PASS, dir=DIR):
+        ftp = FTP()
+        try:
+            ftp.connect(host=host, port=port)
+            ftp.login(user=user, passwd=passwd)
+            with open(file_name, mode='r') as csv:
+                ftp.storlines('STOR %s' % join(dir, basename(file_name)), csv)
+        finally:
+            ftp.close()
+
 if __name__ == '__main__':
-    ExportBatch().create_csv_file()
+    batch = ExportBatch()
+    file_name = batch.create_csv_file()
+    batch.ftp_send(file_name)
+
