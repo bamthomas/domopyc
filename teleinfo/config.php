@@ -58,9 +58,7 @@ function queryhistory ($timestampdebut, $dateformatsql) {
   global $table;
 
   $query="SELECT date(timestamp) AS rec_date, DATE_FORMAT(date(timestamp), '$dateformatsql') AS 'periode' ,
-    ROUND( ((MAX(`watt`) - MIN(`watt`)) / 1000) ,1 ) AS base,
-    ROUND( ((MAX(`watt`) - MIN(`watt`)) / 1000) ,1 ) AS hp,
-    ROUND( ((MAX(`watt`) - MIN(`watt`)) / 1000) ,1 ) AS hc
+    round(sum(`watt`)/count(*) * 24 / 1000, 1) AS base
     FROM `$table` 
     WHERE UNIX_TIMESTAMP(timestamp) > '$timestampdebut'
     GROUP BY periode
