@@ -57,4 +57,5 @@ if __name__ == '__main__':
         batch = ExportBatch(date=datetime.now() - timedelta(days=days_before))
         file_name = batch.create_csv_file()
         batch.ftp_send(file_name)
+        if file_name: os.remove(file_name)
 
