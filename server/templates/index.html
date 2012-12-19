@@ -5,14 +5,19 @@
     <title>Current Cost</title>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
     <script src="{{ url_for('static', filename='smoothie.js') }}" type="text/javascript"></script>
-
+    <style type="text/css">
+        .watt {
+            font-family: monospace;
+            font-size: 40px;
+        }
+        div { text-align: center;}
+    </style>
 </head>
 <body>
-<p><b>Current Cost</b></p>
-
-<canvas id="mycanvas" width="1000" height="400"></canvas>
-<p>Valeur Courante : <span id="current"></span></p>
-
+<div>
+    <p class="watt"><span id="current">?</span>&nbsp;Watt</p>
+    <canvas id="mycanvas" width="1000" height="400"></canvas>
+</div>
 <script type="text/javascript">
     var smoothie = new SmoothieChart({
         millisPerPixel: '500',
@@ -26,7 +31,7 @@
         source.onmessage = function (e) {
             item = JSON.parse(e.data);
             line.append(new Date().getTime(), item.watt);
-            $("#current").replaceWith('<span id="current">' + item.watt + '</span>');
+            $("#current").text(item.watt);
         };
     }
     smoothie.addTimeSeries(line, { strokeStyle: 'rgb(0, 255, 0)', fillStyle: 'rgba(0, 255, 0, 0.4)', lineWidth: 3 });
