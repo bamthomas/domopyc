@@ -9,7 +9,6 @@ date_default_timezone_set("Europe/Paris");
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <meta content="no-cache" http-equiv="Pragma">
 
-    <link rel="stylesheet" href="./css/themes/ui-lightness/jquery.ui.all.css">
     <link rel="shortcut icon" href="./favicon.ico">
 
     <script type="text/javascript" src="./js/jquery-1.6.2.min.js"></script>
