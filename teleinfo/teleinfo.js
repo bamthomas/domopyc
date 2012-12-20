@@ -1,5 +1,5 @@
-
-var start = new Date();
+var START = new Date();
+var DAILY_CHART_BEGIN_TIMESTAMP = yesterday();
 
 jQuery(function($) {
   Highcharts.setOptions({
@@ -21,6 +21,11 @@ jQuery(function($) {
   });
 });
 
+function yesterday() {
+      var now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  }
+
 var totalBASE = 0;
 var totalHP = 0;
 var totalHC = 0;
@@ -30,15 +35,9 @@ var chart_elec1;
 var chart_elec2;
 
 $(document).ready(function() {
-  $.getJSON('json.php?query=daily', function(data) {
-    // Create the chart
-    chart_elec1 = new Highcharts.StockChart(init_chart1(data));
-  });
 
-  $.getJSON('json.php?query=history', function(data) {
-    // Create the chart
-    chart_elec2 = new Highcharts.Chart(init_chart2(data));
-  });
+  refresh_chart1(DAILY_CHART_BEGIN_TIMESTAMP);
+  refresh_chart2("8jours");
 
   function init_chart1(data) {
     return {
@@ -47,7 +46,7 @@ $(document).ready(function() {
         events: {
           load: function(chart) {
             this.setTitle(null, {
-              text: 'Construit en '+ (new Date() - start) +'ms'
+              text: 'Construit en '+ (new Date() - START) +'ms'
             });
             if ($('#chart1legende').length) {
               $("#chart1legende").html(data.subtitle);
@@ -224,7 +223,7 @@ $(document).ready(function() {
         events: {
           load: function(chart) {
             this.setTitle(null, {
-              text: 'Construit en '+ (new Date() - start) +'ms'
+              text: 'Construit en '+ (new Date() - START) +'ms'
             });
             if ($('#chart2legende').length) {
               $("#chart2legende").html(data.subtitle);
@@ -343,44 +342,29 @@ $(document).ready(function() {
 
   function refresh_chart1(date) {
     // remise à zéro du chronomètre
-    start = new Date();
+    START = new Date();
 
-    // on relance la requête historique
     $.getJSON('json.php?query=daily&date='+parseInt(date.getTime()/1000), function(data) {
-      // Remplacement du graphique
       chart_elec1= new Highcharts.StockChart(init_chart1(data));
     });
   }
   
   function refresh_chart2(periode) {
     // remise à zéro du chronomètre
-    start = new Date();
+    START = new Date();
 
-    // on relance la requête historique
     $.getJSON('json.php?query=history&periode='+periode, function(data) {
-      // Remplacement du graphique
       chart_elec2 = new Highcharts.Chart(init_chart2(data));
     });
   }
   
   $('.button_chart1').click(function() {
-    curdate = chart_elec1.series[0].xData[chart_elec1.series[0].xData.length-1];
-    var newdate = new Date();
-    newdate.setTime (curdate);
-    switch (this.value)
-    {
-      case "1prec":
-        newdate.setDate(newdate.getDate()-1);
-        break;
-      case "1suiv":
-        newdate.setDate(newdate.getDate()+1);
-        break;
-      case "now":
-        newdate = new Date();
-        break;
+    var deltaDate = parseInt(this.value);
+    if (deltaDate == 0) {
+        DAILY_CHART_BEGIN_TIMESTAMP = yesterday();
     }
-
-    refresh_chart1(newdate);
+    DAILY_CHART_BEGIN_TIMESTAMP.setDate(DAILY_CHART_BEGIN_TIMESTAMP.getDate() + deltaDate);
+    refresh_chart1(DAILY_CHART_BEGIN_TIMESTAMP);
   });
 
   $('.button_chart2').click(function() {

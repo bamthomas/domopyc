@@ -56,9 +56,9 @@ color:#FFFFFF;
   </head>
   <body>
     <div style="text-align: center;">
-        <button class="button_chart1" value="1prec">- 24h</button>
-        <button class="button_chart1" value="now">Aujourd'hui</button>
-        <button class="button_chart1" value="1suiv">+ 24h</button>
+        <button class="button_chart1" value="-1">- 24h</button>
+        <button class="button_chart1" value="0">Hier</button>
+        <button class="button_chart1" value="+1">+ 24h</button>
     </div>
     <br />
     <div id="chart1" style="width: 800px; height: 500px; margin: 0 auto"></div>
