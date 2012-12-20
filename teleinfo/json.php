@@ -48,11 +48,8 @@ function daily () {
     $timestampheure = min($date, time());
   }
   else {
-    $heurecourante = date('H') ;              // Heure courante.
-    //$timestampheure = gmmktime($heurecourante,0,0,date("m"),date("d"),date("Y"));  // Timestamp courant à heure fixe (mn et s à 0).
-    //$timestampheure = gmmktime($heurecourante,date("i"),0,date("m"),date("d"),date("Y"));  // Timestamp courant à heure fixe (mn et s à 0).
-    //$timestampheure = mktime($heurecourante,date("i"),0,date("m"),date("d"),date("Y"));  // Timestamp courant à heure fixe (mn et s à 0).
-    $timestampheure = mktime($heurecourante+1,0,0,date("m"),date("d"),date("Y"));  // Timestamp courant à heure fixe (mn et s à 0).
+    $heurecourante = date('H') ;
+    $timestampheure = mktime($heurecourante+1,0,0,date("m"),date("d"),date("Y"));
   }
 
   $timestampfin = $timestampheure;
