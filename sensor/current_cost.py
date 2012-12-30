@@ -1,7 +1,6 @@
 # coding=utf-8
 from datetime import datetime, timedelta
 from json import loads, dumps
-from json.decoder import JSONDecoder
 import logging
 import threading
 from xml.etree.ElementTree import XML, XMLParser, ParseError
