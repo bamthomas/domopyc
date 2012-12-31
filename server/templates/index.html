@@ -62,7 +62,6 @@
                                 var data = [];
                                 for (var i=0; i<data_json.length; i++) {
                                     var point = data_json[i];
-                                    console.log(point);
                                     data.push([new Date(point[0]).getTime(), point[1]]);
                                 }
                                 return data;
