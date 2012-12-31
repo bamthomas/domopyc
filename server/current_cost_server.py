@@ -23,7 +23,7 @@ def stream():
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return render_template('index.html', init_data=to_js_for_highchart(fill_values(get_current_cost_data(), 100)))
 
 def get_current_cost_data():
     return REDIS.lrange('current_cost_%s' % datetime.now().strftime('%Y-%m-%d'), 0, -1)
@@ -43,6 +43,10 @@ def fill_values(list, nb_data):
                 result_list.append(copied_from_item)
         return map(lambda d: dumps(d), result_list)
     return list
+
+def to_js_for_highchart(l):
+    data_dicts = map(lambda json: loads(json), l)
+    return [[item['date'], item['watt']] for item in data_dicts]
 
 if __name__ == '__main__':
     app.debug = True
