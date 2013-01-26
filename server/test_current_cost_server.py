@@ -13,8 +13,8 @@ class RedisGetDataOfDay(unittest.TestCase):
         self.myredis.delete('current_cost_%s' % datetime.now().strftime('%Y-%m-%d'))
 
     def test_get_data_of_current_day(self):
-        expected_json = dumps({'date': datetime.now().isoformat(), 'watt': 305, 'temperature': 21.4})
-        self.myredis.lpush('current_cost_%s' % datetime.now().strftime('%Y-%m-%d'), expected_json)
+        expected_json = {'date': datetime.now().isoformat(), 'watt': 305, 'temperature': 21.4}
+        self.myredis.lpush('current_cost_%s' % datetime.now().strftime('%Y-%m-%d'), dumps(expected_json))
 
         data = get_current_cost_data()
         self.assertEquals(len(data), 1)

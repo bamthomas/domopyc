@@ -21,10 +21,14 @@ def stream():
 
 @app.route('/')
 def home():
-    return render_template('index.html', init_data=map(lambda json: loads(json),get_current_cost_data()))
+    return render_template('index.html')
+
+@app.route('/today')
+def today():
+    return flask.jsonify(points=get_current_cost_data())
 
 def get_current_cost_data():
-    return REDIS.lrange('current_cost_%s' % datetime.now().strftime('%Y-%m-%d'), 0, -1)
+    return map(lambda json: loads(json), REDIS.lrange('current_cost_%s' % datetime.now().strftime('%Y-%m-%d'), 0, -1))
 
 if __name__ == '__main__':
     app.debug = True
