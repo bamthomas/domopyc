@@ -15,6 +15,9 @@ __author__ = 'bruno'
 logging.basicConfig(format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
 LOGGER = logging.getLogger('current_cost')
 
+
+def now(): return datetime.now()
+
 class CurrentCostReader(threading.Thread):
     def __init__(self, serial_drv, publish_func):
         super(CurrentCostReader, self).__init__(target=self.read_sensor)
@@ -38,7 +41,6 @@ class CurrentCostReader(threading.Thread):
     def stop(self):
         self.stop_asked.set()
 
-def now(): return datetime.now()
 
 def redis_publish(event_dict):
     REDIS.publish(CURRENT_COST, dumps(event_dict))

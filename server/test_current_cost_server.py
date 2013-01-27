@@ -1,13 +1,14 @@
 from datetime import datetime, timedelta
 from json import dumps
 import unittest
-from current_cost_server import REDIS, get_current_cost_data
+from current_cost import RedisSubscriber
+from current_cost_server import REDIS, get_current_cost_data, LiveDataMessageHandler
+import current_cost_server
 
 __author__ = 'bruno'
 
 
 class RedisGetDataOfDay(unittest.TestCase):
-
     def setUp(self):
         self.myredis = REDIS
         self.myredis.delete('current_cost_%s' % datetime.now().strftime('%Y-%m-%d'))
@@ -19,5 +20,42 @@ class RedisGetDataOfDay(unittest.TestCase):
         data = get_current_cost_data()
         self.assertEquals(len(data), 1)
         self.assertEquals(data, [expected_json])
-        self.myredis.lpush('current_cost_%s' % datetime.now().strftime('%Y-%m-%d'), dumps({'date': datetime.now().isoformat(), 'watt': 432, 'temperature': 20}))
+        self.myredis.lpush('current_cost_%s' % datetime.now().strftime('%Y-%m-%d'),
+            dumps({'date': datetime.now().isoformat(), 'watt': 432, 'temperature': 20}))
         self.assertEquals(len(get_current_cost_data()), 2)
+
+
+class RedisGetLiveData(unittest.TestCase):
+    def setUp(self):
+        self.myredis = REDIS
+        self.myredis.delete('current_cost_live')
+
+    def tearDown(self):
+        self.myredis.delete('current_cost_live')
+
+    def test_get_live_data(self):
+        live_data_handler = LiveDataMessageHandler(self.myredis)
+        live_data_handler.handle(dumps({'watt': 100, 'temperature':20.0}))
+
+        data = live_data_handler.get_data()
+
+        self.assertEqual(1, len(data))
+        self.assertEqual({'watt': 100, 'temperature':20.0}, data[0])
+
+    def test_get_live_data_keeps_one_hour_data(self):
+        live_data_handler = LiveDataMessageHandler(self.myredis, 1800) #means we keeep 2 messages per hour
+
+        live_data_handler.handle(dumps({'watt': 100}))
+        live_data_handler.handle(dumps({'watt': 200}))
+        live_data_handler.handle(dumps({'watt': 300}))
+
+        self.assertEqual(2, len(live_data_handler.get_data(since_minutes=60)))
+        self.assertEqual(1, len(live_data_handler.get_data(since_minutes=30)))
+
+
+    def test_get_live_data_with_float_period(self):
+        live_data_handler = LiveDataMessageHandler(self.myredis, 6.666)
+        live_data_handler.handle(dumps({'watt': 100}))
+
+        self.assertEqual(1, len(live_data_handler.get_data(since_minutes=1)))
+

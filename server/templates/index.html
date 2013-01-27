@@ -99,24 +99,29 @@
                 chart.redraw();
             });
         }
-        function empty_chart() {
-            var data = [];
-            for (var index = -200; index < 0; index++) {
-                var now = new Date().getTime();
-                data.push([now + index * 6000, 0]);
-            }
-            chart.series[0].setData(data, true);
-            chart.redraw();
+        function since(minutes) {
+            $.getJSON('/data_since/' + minutes, function (json_data) {
+                var data = [];
+                for (var index = 0; index < json_data.points.length; index++) {
+                    var point = json_data.points[index];
+                    data.push([new Date(point['date']).getTime(), point['watt']]);
+                }
+                chart.series[0].setData(data, true);
+                chart.redraw();
+            });
         }
     </script>
 </head>
 <body>
 <div>
-    <button onclick="today_chart()">aujourd'hui</button>
-    <button onclick="empty_chart()">vide</button>
     <div class="watt"><span id="current">?</span>&nbsp;Watt</div>
     <div><span id="wh">?</span>Wh&nbsp;(<span id="cost">?</span>&euro;)</div>
     <div id="graph" style="min-width: 400px; height: 400px; margin: 0 auto"></div>
+    <button onclick="today_chart()">aujourd'hui</button>
+    <button onclick="since(60)">1h</button>
+    <button onclick="since(30)">1/2h</button>
+    <button onclick="since(15)">1/4h</button>
+    <button onclick="since(10)">10mn</button>
 </div>
 
 </body>
