@@ -43,10 +43,16 @@ class RedisGetLiveData(unittest.TestCase):
         self.assertEqual({'watt': 100, 'temperature':20.0}, data[0])
 
     def test_get_live_data_keeps_one_hour_data(self):
-        live_data_handler = LiveDataMessageHandler(self.myredis, 1800) #means we keeep 2 messages per hour
+        now = datetime.now()
+        live_data_handler = LiveDataMessageHandler(self.myredis)
 
+        current_cost_server.now = lambda: now
         live_data_handler.handle(dumps({'watt': 100}))
+
+        current_cost_server.now = lambda: now + timedelta(minutes=30)
         live_data_handler.handle(dumps({'watt': 200}))
+
+        current_cost_server.now = lambda: now + timedelta(minutes=61)
         live_data_handler.handle(dumps({'watt': 300}))
 
         self.assertEqual(2, len(live_data_handler.get_data(since_minutes=60)))

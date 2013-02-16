@@ -8,21 +8,24 @@ from current_cost import RedisSubscriber
 __author__ = 'bruno'
 
 REDIS = redis.Redis()
-MESSAGES_PERIOD_IN_SECOND = 6.66
 app = flask.Flask(__name__)
+now = datetime.now
 
 class LiveDataMessageHandler(object):
-    def __init__(self, myredis, message_period_in_second=MESSAGES_PERIOD_IN_SECOND):
+    def __init__(self, myredis, message_period_in_minute=60):
         self.myredis = myredis
-        self.nb_messages_to_keep = 3600 / message_period_in_second
+        self.history_duration_in_minute = message_period_in_minute
+
+    def get_current_timestamp(self):
+        return long(now().strftime('%s'))
 
     def handle(self, json_message):
-        self.myredis.lpush('current_cost_live', json_message)
-        self.myredis.ltrim('current_cost_live', 0, self.nb_messages_to_keep-1)
+        timestamp = self.get_current_timestamp()
+        self.myredis.zadd('current_cost_live', json_message, timestamp)
+        self.myredis.zremrangebyscore('current_cost_live', 0, timestamp - self.history_duration_in_minute * 60)
 
     def get_data(self, since_minutes=60):
-        nb_messages = since_minutes * 60  * self.nb_messages_to_keep / 3600
-        return map(lambda json: loads(json), self.myredis.lrange('current_cost_live', 0, nb_messages-1))
+        return map(lambda json: loads(json), self.myredis.zrangebyscore('current_cost_live', self.get_current_timestamp() - since_minutes * 60, self.get_current_timestamp()))
 
 LIVE_DATA_MESSAGE_HANDLER = LiveDataMessageHandler(REDIS)
 
