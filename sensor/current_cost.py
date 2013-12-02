@@ -18,6 +18,7 @@ LOGGER = logging.getLogger('current_cost')
 
 def now(): return datetime.now()
 
+
 class CurrentCostReader(threading.Thread):
     def __init__(self, serial_drv, publish_func):
         super(CurrentCostReader, self).__init__(target=self.read_sensor)
@@ -34,7 +35,8 @@ class CurrentCostReader(threading.Thread):
                     power_element = xml_data.find('ch1/watts')
                     if power_element is not None:
                         power = int(power_element.text)
-                        self.publish({'date':now().isoformat(), 'watt':power, 'temperature':float(xml_data.find('tmpr').text)})
+                        self.publish({'date': now().isoformat(), 'watt': power,
+                                      'temperature': float(xml_data.find('tmpr').text)})
                 except ET.ParseError as xml_parse_error:
                     LOGGER.exception(xml_parse_error)
 
@@ -44,6 +46,7 @@ class CurrentCostReader(threading.Thread):
 
 def redis_publish(event_dict):
     REDIS.publish(CURRENT_COST, dumps(event_dict))
+
 
 class RedisSubscriber(threading.Thread):
     def __init__(self, redis, message_handler):
@@ -59,6 +62,7 @@ class RedisSubscriber(threading.Thread):
 
     def stop(self):
         self.pubsub.unsubscribe(CURRENT_COST)
+
 
 class AverageMessageHandler(object):
     def __init__(self, average_period_minutes=0):
@@ -84,15 +88,38 @@ class AverageMessageHandler(object):
             self.messages = []
 
     def get_average_json_message(self, date):
-        watt_and_temp = map(lambda msg: (msg['watt'],msg['temperature']), self.messages)
-        watt_sum, temp_sum = reduce(lambda (x,t),(y,v): (x+y, t+v), watt_and_temp)
+        watt_and_temp = map(lambda msg: (msg['watt'], msg['temperature']), self.messages)
+        watt_sum, temp_sum = reduce(lambda (x, t), (y, v): (x + y, t + v), watt_and_temp)
         nb_messages = len(self.messages)
-        return dumps({'date': date, 'watt': watt_sum/ nb_messages, 'temperature': temp_sum / nb_messages,
-                      'nb_data': nb_messages, 'minutes': int(self.delta_minutes.total_seconds()/60)})
+        return dumps({'date': date, 'watt': watt_sum / nb_messages, 'temperature': temp_sum / nb_messages,
+                      'nb_data': nb_messages, 'minutes': int(self.delta_minutes.total_seconds() / 60)})
+
+
+class MysqlAverageMessageHandler(AverageMessageHandler):
+    CREATE_TABLE_SQL = '''CREATE TABLE IF NOT EXISTS `current_cost` (
+                            `id` mediumint(9) NOT NULL AUTO_INCREMENT,
+                            `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                            `watt` int(11) DEFAULT NULL,
+                            `minutes` int(11) DEFAULT NULL,
+                            `nb_data` int(11) DEFAULT NULL,
+                            `temperature` float DEFAULT NULL,
+                            PRIMARY KEY (`id`)
+                            ) ENGINE=MyISAM DEFAULT CHARSET=utf8'''
+
+    def __init__(self, db, average_period_minutes=0):
+        super(MysqlAverageMessageHandler, self).__init__(average_period_minutes)
+        self.db = db
+        with self.db:
+            self.db.cursor().execute(MysqlAverageMessageHandler.CREATE_TABLE_SQL)
+
+    def push_redis(self, key, json_message):
+        pass
+
 
 if __name__ == '__main__':
     serial_drv = serial.Serial('/dev/ttyUSB0', baudrate=57600,
-            bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=10)
+                               bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,
+                               timeout=10)
     try:
         current_cost = CurrentCostReader(serial_drv, redis_publish)
         current_cost.start()

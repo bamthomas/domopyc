@@ -3,3 +3,5 @@ nose
 pyserial
 redis
 rednose
+flask
+MySQL-python
