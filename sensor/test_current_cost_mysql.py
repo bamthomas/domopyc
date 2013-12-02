@@ -8,9 +8,6 @@ import current_cost
 __author__ = 'bruno'
 
 
-
-
-
 class MysqlAverageMessageHandlerTest(unittest.TestCase):
     def setUp(self):
         current_cost.now = lambda: datetime(2012, 12, 13, 14, 2, 0)
@@ -38,15 +35,15 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
 
     def test_average(self):
         message_handler = current_cost.MysqlAverageMessageHandler(self.db, average_period_minutes=10)
-        message_handler.handle(dumps({'date': '2012-12-13T14:00:07', 'watt': 100, 'temperature':20.0}))
+        message_handler.handle(dumps({'date': '2012-12-13T14:00:07', 'watt': 100, 'temperature': 20.0}))
         self.assertEquals(0, self.nb_table_rows('current_cost'))
 
         current_cost.now = lambda: datetime(2012, 12, 13, 14, 3, 0)
-        message_handler.handle(dumps({'date': '2012-12-13T14:03:07', 'watt': 200, 'temperature':30.0}))
+        message_handler.handle(dumps({'date': '2012-12-13T14:03:07', 'watt': 200, 'temperature': 30.0}))
         self.assertEquals(0, self.nb_table_rows('current_cost'))
 
         current_cost.now = lambda: datetime(2012, 12, 13, 14, 10, 0, 1)
-        message_handler.handle(dumps({'date': '2012-12-13T14:10:07', 'watt': 900, 'temperature':10.0}))
+        message_handler.handle(dumps({'date': '2012-12-13T14:10:07', 'watt': 900, 'temperature': 10.0}))
 
         self.assertEquals(1, self.nb_table_rows('current_cost'))
         with self.db:

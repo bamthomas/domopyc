@@ -73,7 +73,7 @@ class AverageMessageHandler(object):
     def next_plain(self, minutes, dt):
         return dt - timedelta(minutes=dt.minute % minutes - minutes, seconds=dt.second, microseconds=dt.microsecond)
 
-    def push_redis(self, key, json_message):
+    def save(self, key, json_message):
         if REDIS.lpush(key, json_message) == 1:
             REDIS.expire(key, 5 * 24 * 3600)
 
@@ -83,7 +83,7 @@ class AverageMessageHandler(object):
         key = 'current_cost_%s' % message_date.strftime('%Y-%m-%d')
         self.messages.append(message)
         if now() >= self.next_save_date:
-            self.push_redis(key, self.get_average_json_message(message['date']))
+            self.save(key, self.get_average_json_message(message['date']))
             self.next_save_date = self.next_save_date + self.delta_minutes
             self.messages = []
 
@@ -112,7 +112,7 @@ class MysqlAverageMessageHandler(AverageMessageHandler):
         with self.db:
             self.db.cursor().execute(MysqlAverageMessageHandler.CREATE_TABLE_SQL)
 
-    def push_redis(self, key, json_message):
+    def save(self, key, json_message):
         message = loads(json_message)
         with self.db:
             message_date = iso8601.parse_date(message['date'])
