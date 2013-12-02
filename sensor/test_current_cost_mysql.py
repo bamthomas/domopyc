@@ -1,10 +1,14 @@
 from _mysql import OperationalError
 from datetime import datetime
+from json import dumps
 import unittest
 import MySQLdb
 import current_cost
 
 __author__ = 'bruno'
+
+
+
 
 
 class MysqlAverageMessageHandlerTest(unittest.TestCase):
@@ -31,3 +35,28 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
             cursor.execute("show tables like 'current_cost'")
             current_cost_table = cursor.fetchall()
             self.assertEquals((('current_cost',),), current_cost_table)
+
+    def test_average(self):
+        message_handler = current_cost.MysqlAverageMessageHandler(self.db, average_period_minutes=10)
+        message_handler.handle(dumps({'date': '2012-12-13T14:00:07', 'watt': 100, 'temperature':20.0}))
+        self.assertEquals(0, self.nb_table_rows('current_cost'))
+
+        current_cost.now = lambda: datetime(2012, 12, 13, 14, 3, 0)
+        message_handler.handle(dumps({'date': '2012-12-13T14:03:07', 'watt': 200, 'temperature':30.0}))
+        self.assertEquals(0, self.nb_table_rows('current_cost'))
+
+        current_cost.now = lambda: datetime(2012, 12, 13, 14, 10, 0, 1)
+        message_handler.handle(dumps({'date': '2012-12-13T14:10:07', 'watt': 900, 'temperature':10.0}))
+
+        self.assertEquals(1, self.nb_table_rows('current_cost'))
+        with self.db:
+            cursor = self.db.cursor()
+            cursor.execute("select timestamp, watt, minutes, nb_data, temperature from current_cost")
+            rows = cursor.fetchall()
+            self.assertEqual((datetime(2012, 12, 13, 14, 10, 7), 400L, 10L, 3L, 20.0), rows[0])
+
+    def nb_table_rows(self, table):
+        with self.db:
+            cursor = self.db.cursor()
+            cursor.execute("select * from %s" % table)
+            return len(cursor.fetchall())

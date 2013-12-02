@@ -113,7 +113,12 @@ class MysqlAverageMessageHandler(AverageMessageHandler):
             self.db.cursor().execute(MysqlAverageMessageHandler.CREATE_TABLE_SQL)
 
     def push_redis(self, key, json_message):
-        pass
+        message = loads(json_message)
+        with self.db:
+            message_date = iso8601.parse_date(message['date'])
+            self.db.cursor().execute(
+                "INSERT INTO current_cost (timestamp, watt, minutes, nb_data, temperature) values ('%s', %s, %s, %s, %s) " % (
+                    message_date, message['watt'], message['minutes'], message['nb_data'], message['temperature']))
 
 
 if __name__ == '__main__':
