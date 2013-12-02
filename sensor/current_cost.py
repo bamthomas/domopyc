@@ -73,17 +73,11 @@ class AverageMessageHandler(object):
     def next_plain(self, minutes, dt):
         return dt - timedelta(minutes=dt.minute % minutes - minutes, seconds=dt.second, microseconds=dt.microsecond)
 
-    def save(self, key, json_message):
-        if REDIS.lpush(key, json_message) == 1:
-            REDIS.expire(key, 5 * 24 * 3600)
-
     def handle(self, json_message):
         message = loads(json_message)
-        message_date = iso8601.parse_date(message['date'])
-        key = 'current_cost_%s' % message_date.strftime('%Y-%m-%d')
         self.messages.append(message)
         if now() >= self.next_save_date:
-            self.save(key, self.get_average_json_message(message['date']))
+            self.save(iso8601.parse_date(message['date']), self.get_average_json_message(message['date']))
             self.next_save_date = self.next_save_date + self.delta_minutes
             self.messages = []
 
@@ -91,8 +85,22 @@ class AverageMessageHandler(object):
         watt_and_temp = map(lambda msg: (msg['watt'], msg['temperature']), self.messages)
         watt_sum, temp_sum = reduce(lambda (x, t), (y, v): (x + y, t + v), watt_and_temp)
         nb_messages = len(self.messages)
-        return dumps({'date': date, 'watt': watt_sum / nb_messages, 'temperature': temp_sum / nb_messages,
-                      'nb_data': nb_messages, 'minutes': int(self.delta_minutes.total_seconds() / 60)})
+        return {'date': date, 'watt': watt_sum / nb_messages, 'temperature': temp_sum / nb_messages,
+                'nb_data': nb_messages, 'minutes': int(self.delta_minutes.total_seconds() / 60)}
+
+    def save(self, message_date, average_message):
+        raise NotImplementedError
+
+
+class RedisAverageMessageHandler(AverageMessageHandler):
+    def __init__(self, db, average_period_minutes=0):
+        super(RedisAverageMessageHandler, self).__init__(average_period_minutes)
+        self.redis = db
+
+    def save(self, message_date, average_message):
+        key = 'current_cost_%s' % message_date.strftime('%Y-%m-%d')
+        if self.redis.lpush(key, dumps(average_message)) == 1:
+            self.redis.expire(key, 5 * 24 * 3600)
 
 
 class MysqlAverageMessageHandler(AverageMessageHandler):
@@ -112,13 +120,12 @@ class MysqlAverageMessageHandler(AverageMessageHandler):
         with self.db:
             self.db.cursor().execute(MysqlAverageMessageHandler.CREATE_TABLE_SQL)
 
-    def save(self, key, json_message):
-        message = loads(json_message)
+    def save(self, message_date, average_message):
         with self.db:
-            message_date = iso8601.parse_date(message['date'])
             self.db.cursor().execute(
                 "INSERT INTO current_cost (timestamp, watt, minutes, nb_data, temperature) values ('%s', %s, %s, %s, %s) " % (
-                    message_date, message['watt'], message['minutes'], message['nb_data'], message['temperature']))
+                    message_date, average_message['watt'], average_message['minutes'], average_message['nb_data'],
+                    average_message['temperature']))
 
 
 if __name__ == '__main__':
@@ -129,7 +136,7 @@ if __name__ == '__main__':
         current_cost = CurrentCostReader(serial_drv, redis_publish)
         current_cost.start()
 
-        redis_save_consumer = RedisSubscriber(REDIS, AverageMessageHandler(10))
+        redis_save_consumer = RedisSubscriber(REDIS, RedisAverageMessageHandler(REDIS, 10))
         redis_save_consumer.start()
 
         current_cost.join()
