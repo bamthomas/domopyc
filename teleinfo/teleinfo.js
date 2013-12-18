@@ -7,8 +7,8 @@ jQuery(function ($) {
             months: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
                 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
             weekdays: ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
-            decimalPoint: ',',
-            thousandsSep: '.',
+            decimalPoint: '.',
+            thousandsSep: ',',
             rangeSelectorFrom: 'Du',
             rangeSelectorTo: 'au'
         },
@@ -147,7 +147,23 @@ $(document).ready(function () {
                             }
                         }
                     ]
-                }
+                },{
+		    labels: {
+                    formatter: function () {
+			return this.value + '°C';
+		    }, 	
+                    style: {
+                        color: '#4572A7'
+                    }
+                },
+		max: 20,
+                title: {
+                    text: 'Temperature',
+                    style: {
+                        color: '#4572A7'
+                    }
+                }, opposite: true
+	       }
             ],
 
             series: [
@@ -199,7 +215,16 @@ $(document).ready(function () {
                         yDecimals: 0
                     },
                     showInLegend: ((data.tarif_type == "HCHP") ? false : true)
-                }
+                },
+		{
+		   name: data.Temp_name,
+		   data: data.Temp_data,
+		   type: 'spline',
+		   yaxis: 1,
+		   tooltip: {
+                      valueSuffix: '°C'
+                   }
+		}
             ],
             legend: {
                 enabled: true,
