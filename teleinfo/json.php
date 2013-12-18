@@ -73,6 +73,7 @@ function daily () {
   $array_HP = array();
   $array_HC = array();
   $array_I = array();
+  $array_Temp = array();
   $array_JPrec = array();
   $navigator = array();
 
@@ -123,6 +124,7 @@ function daily () {
       if ($courbe_max[2]<$val) {$courbe_max[2] = $val; $courbe_maxdate[2] = $ts;};
       if ($courbe_min[2]>$val) {$courbe_min[2] = $val; $courbe_mindate[2] = $ts;};
     }
+    array_push ( $array_Temp, array($ts, floatval($row["temperature"]))) ;
     $val = floatval(str_replace(",", ".", $row["iinst1"])) ;
     array_push ( $array_I , array($ts, $val ));
     if ($courbe_max[3]<$val) {$courbe_max[3] = $val; $courbe_maxdate[3] = $ts;};
@@ -173,6 +175,8 @@ function daily () {
     'HC_data' => $array_HC,
     'I_name' => $courbe_titre[3]." / min ".$courbe_min[3]." max ".$courbe_max[3],
     'I_data' => $array_I,
+    'Temp_name' => "Température",
+    'Temp_data' => $array_Temp,
     'JPrec_name' => 'Période précédente', //'Hier',
     'JPrec_data' => $array_JPrec,
     'navigator' => $navigator,

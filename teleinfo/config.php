@@ -56,7 +56,7 @@ timestamp   rec_date   rec_time   adco     optarif isousc   hchp     hchc     pt
 function querydaily ($timestampdebut, $timestampfin) {
   global $table;
 
-  $query="SELECT unix_timestamp(timestamp) as timestamp,  date(timestamp) AS rec_date, time(timestamp ) AS rec_time, 'TH..' as ptec, watt as papp
+  $query="SELECT unix_timestamp(timestamp) as timestamp,  date(timestamp) AS rec_date, time(timestamp ) AS rec_time, 'TH..' as ptec, watt as papp, temperature 
     FROM `$table`
     WHERE timestamp >= from_unixtime($timestampdebut)
     AND timestamp < from_unixtime($timestampfin)
