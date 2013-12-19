@@ -166,148 +166,151 @@ $(document).ready(function () {
         // remise à zéro du chronomètre
         START = new Date();
 
-        $.getJSON('json.php?query=daily&date=' + parseInt(date.getTime() / 1000), function (data) {
+        $.getJSON('json.php?query=daily&date=' + parseInt(date.getTime() / 1000), function (jsonData) {
             $('#chart1').highcharts({
-                chart: {
-                    zoomType: 'x',
-                    renderTo: 'chart1',
-                    events: {
-                        load: function (chart) {
-                            this.setTitle(null, {
-                                text: 'Construit en ' + (new Date() - START) + 'ms'
-                            });
-                            if ($('#chart1legende').length) {
-                                $("#chart1legende").html(data.subtitle);
+                    chart: {
+                        zoomType: 'x',
+                        renderTo: 'chart1',
+                        events: {
+                            load: function (chart) {
+                                this.setTitle(null, {
+                                    text: 'Construit en ' + (new Date() - START) + 'ms'
+                                });
+                                if ($('#chart1legende').length) {
+                                    $("#chart1legende").html(data.subtitle);
+                                }
                             }
-                        }
+                        },
+                        borderColor: '#EBBA95',
+                        borderWidth: 2,
+                        borderRadius: 10,
+                        ignoreHiddenSeries: false
                     },
-                    borderColor: '#EBBA95',
-                    borderWidth: 2,
-                    borderRadius: 10,
-                    ignoreHiddenSeries: false
-                },
-                title: {
-                    text: data.title
-                },
-                subtitle: {
-                    text: 'Construit en...'
-                },
-                plotOptions: {
-                    areaspline: {
-                        fillColor: {
-                            linearGradient: {
-                                x1: 0,
-                                y1: 0,
-                                x2: 0,
-                                y2: 1
+                    title: {
+                        text: ''
+                    },
+                    subtitle: {
+                        text: 'Source: WorldClimate.com'
+                    },
+                    plotOptions: {
+                        areaspline: {
+                            fillColor: {
+                                linearGradient: {
+                                    x1: 0,
+                                    y1: 0,
+                                    x2: 0,
+                                    y2: 1
+                                },
+                                stops: [
+                                    [0, Highcharts.getOptions().colors[0]],
+                                    [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+                                ]
                             },
-                            stops: [
-                                [0, Highcharts.getOptions().colors[0]],
-                                [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
-                            ]
+                            marker: {
+                                enabled: false
+                            },
+                            states: {
+                                hover: {
+                                    lineWidth: 1
+                                }
+                            }
                         },
-                        marker: {
-                            enabled: false
-                        },
-                        states: {
-                            hover: {
-                                lineWidth: 1
+                        spline: {
+                            marker: {
+                                enabled: false
                             }
                         }
                     },
-                    spline: {
-                        marker: {
-                            enabled: false
+                    xAxis: {
+                        type: 'datetime',
+                        dateTimeLabelFormats: {
+                            hour: '%H:%M',
+                            day: '%H:%M',
+                            week: '%H:%M',
+                            month: '%H:%M'
                         }
-                    }
-                },
-                xAxis: {
-                    type: 'datetime',
-                    dateTimeLabelFormats: {
-                        hour: '%H:%M',
-                        day: '%H:%M',
-                        week: '%H:%M',
-                        month: '%H:%M'
-                    }
-                },
-                yAxis: [
-                    {
+                    },
+                    yAxis: [{
                         title: {
-                            text: 'Heure Base'
+                            text: 'Heure Base',
+                            style: {
+                                color: '#4572A7'
+                            }
                         },
                         labels: {
-                            format: '{value} W'
+                            format: '{value} W',
+                            style: {
+                                color: '#4572A7'
+                            }
                         },
                         alternateGridColor: '#FAFAFA',
                         minorGridLineWidth: 0,
-                        plotLines: [
-                            { // lignes min et max
-                                value: data.seuils.min,
-                                color: 'green',
-                                dashStyle: 'shortdash',
-                                width: 2,
-                                label: {
-                                    text: 'minimum ' + data.seuils.min + 'w'
-                                }
-                            },
-                            {
-                                value: data.seuils.max,
-                                color: 'red',
-                                dashStyle: 'shortdash',
-                                width: 2,
-                                label: {
-                                    text: 'maximum ' + data.seuils.max + 'w'
-                                }
+                        plotLines: [{
+                            value: 1200,
+                            color: 'green',
+                            dashStyle: 'shortdash',
+                            width: 2,
+                            label: {
+                                text: 'minimum 1200w'
                             }
-                        ]
-                    },
-                    {
+                        }, {
+                            value: 2000,
+                            color: 'red',
+                            dashStyle: 'shortdash',
+                            width: 2,
+                            label: {
+                                text: 'maximum 2000w'
+                            }
+                        }]
+                    }, {
                         labels: {
-                            format: '{value}°C'
+                            format: '{value}°C',
+                            style: {
+                                color: '#910000'
+                            }
                         },
                         title: {
-                            text: 'Temperature'
+                            text: 'Temperature',
+                            style: {
+                                color: '#910000'
+                            }
                         },
                         opposite: true
-                    }
-                ],
-                tooltip: {
-                    shared: true
-                },
-                legend: {
-                    layout: 'vertical',
-                    align: 'left',
-                    x: 120,
-                    verticalAlign: 'top',
-                    y: 40,
-                    floating: true,
-                    backgroundColor: '#FFFFFF'
-                },
-                series: [
-                    {
-                        name: "Heure Base",
-                        data: data.BASE_data,
-
+                    }],
+                    tooltip: {
+                        shared: true
+                    },
+                    legend: {
+                        layout: 'vertical',
+                        align: 'left',
+                        x: 120,
+                        verticalAlign: 'top',
+                        y: 100,
+                        floating: true,
+                        backgroundColor: '#FFFFFF'
+                    },
+                    series: [{
+                        name: jsonData.BASE_name,
+                        color: '#4572A7',
                         type: 'areaspline',
-                        threshold: null,
+                        data: jsonData.BASE_data,
                         tooltip: {
                             valueSuffix: ' W'
-                        },
-                        showInLegend: ((data.tarif_type == "HCHP") ? false : true)
-                    },
-                    {
-                        name: 'Temperature',
-                        data: data.Temp_data,
+                        }
 
+                    }, {
+                        name: jsonData.Temp_name,
+                        data: jsonData.Temp_data,
+                        color: '#910000',
+                        yAxis: 1,
                         type: 'spline',
-                        yaxis: 1,
                         tooltip: {
                             valueSuffix: '°C'
                         }
-                    },
-                    {
-                        name: data.JPrec_name,
-                        data: data.JPrec_data,
+                    }, {
+                        name: jsonData.JPrec_name,
+                        data: jsonData.JPrec_data,
+                        color: '#89A54E',
                         type: 'spline',
                         width: 1,
                         shape: 'squarepin',
