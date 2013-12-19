@@ -15,8 +15,6 @@ date_default_timezone_set("Europe/Paris");
     <script type="text/javascript" src="./js/jquery-ui-1.8.5.custom.min.js"></script>
 
     <script type="text/javascript" src="./js/highcharts.js"></script>
-    <script type="text/javascript" src="./js/highstock.js"></script>
-
     <script type='text/javascript' src="teleinfo.js"></script>
 
     <title>graph conso électrique</title>

@@ -12,9 +12,6 @@ jQuery(function ($) {
             rangeSelectorFrom: 'Du',
             rangeSelectorTo: 'au'
         },
-        legend: {
-            enabled: false
-        },
         global: {
             useUTC: false
         }
@@ -42,6 +39,7 @@ $(document).ready(function () {
     function init_chart1(data) {
         return {
             chart: {
+                zoomType: 'x',
                 renderTo: 'chart1',
                 events: {
                     load: function (chart) {
@@ -58,50 +56,40 @@ $(document).ready(function () {
                 borderRadius: 10,
                 ignoreHiddenSeries: false
             },
-            credits: {
-                enabled: false
-            },
             title: {
                 text: data.title
             },
             subtitle: {
                 text: 'Construit en...'
             },
-            rangeSelector: {
-                buttons: [
-                    {
-                        type: 'hour',
-                        count: 1,
-                        text: '1h'
+            plotOptions: {
+                areaspline: {
+                    fillColor: {
+                        linearGradient: {
+                            x1: 0,
+                            y1: 0,
+                            x2: 0,
+                            y2: 1
+                        },
+                        stops: [
+                            [0, Highcharts.getOptions().colors[0]],
+                            [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+                        ]
                     },
-                    {
-                        type: 'hour',
-                        count: 3,
-                        text: '3h'
+                    marker: {
+                        enabled: false
                     },
-                    {
-                        type: 'hour',
-                        count: 6,
-                        text: '6h'
-                    },
-                    {
-                        type: 'hour',
-                        count: 9,
-                        text: '9h'
-                    },
-                    {
-                        type: 'hour',
-                        count: 12,
-                        text: '12h'
-                    },
-                    {
-                        type: 'all',
-                        count: 1,
-                        text: 'All'
+                    states: {
+                        hover: {
+                            lineWidth: 1
+                        }
                     }
-                ],
-                selected: 5,
-                inputEnabled: false
+                },
+                spline: {
+                    marker: {
+                        enabled: false
+                    }
+                }
             },
             xAxis: {
                 type: 'datetime',
@@ -114,18 +102,15 @@ $(document).ready(function () {
             },
             yAxis: [
                 {
-                    labels: {
-                        formatter: function () {
-                            return this.value + ' w';
-                        }
-                    },
                     title: {
-                        text: 'Watt'
+                        text: 'Heure Base'
+
                     },
-                    lineWidth: 2,
-                    showLastLabel: true,
-                    min: 0,
-                    alternateGridColor: '#FDFFD5',
+                    labels: {
+                        format: '{value} W'
+
+                    },
+                    alternateGridColor: '#FAFAFA',
                     minorGridLineWidth: 0,
                     plotLines: [
                         { // lignes min et max
@@ -147,114 +132,68 @@ $(document).ready(function () {
                             }
                         }
                     ]
-                },{
-		    labels: {
-                    formatter: function () {
-			return this.value + '°C';
-		    }, 	
-                    style: {
-                        color: '#4572A7'
-                    }
                 },
-		max: 20,
-                title: {
-                    text: 'Temperature',
-                    style: {
-                        color: '#4572A7'
-                    }
-                }, opposite: true
-	       }
-            ],
+                {
+                    labels: {
+                        format: '{value}°C'
 
+                    },
+                    title: {
+                        text: 'Temperature',
+                        style: {
+                            color: '#89A54E'
+                        }
+                    },
+                    opposite: true
+                }
+            ],
+            tooltip: {
+                shared: true
+            },
+            legend: {
+                layout: 'vertical',
+                align: 'left',
+                x: 120,
+                verticalAlign: 'top',
+                y: 100,
+                floating: true,
+                backgroundColor: '#FFFFFF'
+            },
             series: [
                 {
-                    name: data.HP_name,
-                    data: data.HP_data,
-                    id: 'HP',
+                    name: data.BASE_name,
+                    data: data.BASE_data,
+
+                    id: 'BASE',
                     type: 'areaspline',
                     threshold: null,
                     tooltip: {
-                        yDecimals: 0
+                        valueSuffix: ' W'
                     },
-                    showInLegend: ((data.tarif_type == "HCHP") ? true : false)
+                    showInLegend: ((data.tarif_type == "HCHP") ? false : true)
                 },
                 {
-                    name: data.HC_name,
-                    data: data.HC_data,
-                    id: 'HC',
-                    type: 'areaspline',
-                    threshold: null,
+                    name: data.Temp_name,
+                    data: data.Temp_data,
+
+                    type: 'spline',
+                    yaxis: 1,
                     tooltip: {
-                        yDecimals: 0
-                    },
-                    showInLegend: ((data.tarif_type == "HCHP") ? true : false)
+                        valueSuffix: '°C'
+                    }
                 },
-                /*{
-                 name : data.I_name,
-                 data: data.I_data,
-                 type: 'spline',
-                 width : 1,
-                 shape: 'squarepin'
-                 },*/{
+                {
                     name: data.JPrec_name,
                     data: data.JPrec_data,
                     type: 'spline',
                     width: 1,
                     shape: 'squarepin',
                     tooltip: {
-                        yDecimals: 0
+                        valueSuffix: ' W'
                     }
-                },
-                {
-                    name: data.BASE_name,
-                    data: data.BASE_data,
-                    id: 'BASE',
-                    type: 'areaspline',
-                    threshold: null,
-                    tooltip: {
-                        yDecimals: 0
-                    },
-                    showInLegend: ((data.tarif_type == "HCHP") ? false : true)
-                },
-		{
-		   name: data.Temp_name,
-		   data: data.Temp_data,
-		   type: 'spline',
-		   yaxis: 1,
-		   tooltip: {
-                      valueSuffix: '°C'
-                   }
-		}
-            ],
-            legend: {
-                enabled: true,
-                borderColor: 'black',
-                borderWidth: 1,
-                shadow: true
-            },
-            navigator: {
-                baseSeries: 2,
-                top: 390,
-                menuItemStyle: {
-                    fontSize: '10px'
-                },
-                series: {
-                    name: 'navigator',
-                    data: data.navigator
                 }
-            },
-            scrollbar: { // scrollbar "stylée" grise
-                barBackgroundColor: 'gray',
-                barBorderRadius: 7,
-                barBorderWidth: 0,
-                buttonBackgroundColor: 'gray',
-                buttonBorderWidth: 0,
-                buttonBorderRadius: 7,
-                trackBackgroundColor: 'none',
-                trackBorderWidth: 1,
-                trackBorderRadius: 8,
-                trackBorderColor: '#CCC'
-            }
+
+            ]
         }
     }
 
@@ -393,7 +332,7 @@ $(document).ready(function () {
         START = new Date();
 
         $.getJSON('json.php?query=daily&date=' + parseInt(date.getTime() / 1000), function (data) {
-            chart_elec1 = new Highcharts.StockChart(init_chart1(data));
+            chart_elec1 = new Highcharts.Chart(init_chart1(data));
         });
     }
 
