@@ -245,23 +245,26 @@ $(document).ready(function () {
                         },
                         alternateGridColor: '#FAFAFA',
                         minorGridLineWidth: 0,
-                        plotLines: [{
-                            value: 1200,
-                            color: 'green',
-                            dashStyle: 'shortdash',
-                            width: 2,
-                            label: {
-                                text: 'minimum 1200w'
+                        plotLines: [
+                            { // lignes min et max
+                                value: jsonData.seuils.min,
+                                color: 'green',
+                                dashStyle: 'shortdash',
+                                width: 2,
+                                label: {
+                                    text: 'minimum ' + jsonData.seuils.min + 'w'
+                                }
+                            },
+                            {
+                                value: jsonData.seuils.max,
+                                color: 'red',
+                                dashStyle: 'shortdash',
+                                width: 2,
+                                label: {
+                                    text: 'maximum ' + jsonData.seuils.max + 'w'
+                                }
                             }
-                        }, {
-                            value: 2000,
-                            color: 'red',
-                            dashStyle: 'shortdash',
-                            width: 2,
-                            label: {
-                                text: 'maximum 2000w'
-                            }
-                        }]
+                        ]
                     }, {
                         labels: {
                             format: '{value}°C',
@@ -283,9 +286,9 @@ $(document).ready(function () {
                     legend: {
                         layout: 'vertical',
                         align: 'left',
-                        x: 120,
+                        x: 100,
                         verticalAlign: 'top',
-                        y: 100,
+                        y: 40,
                         floating: true,
                         backgroundColor: '#FFFFFF'
                     },
