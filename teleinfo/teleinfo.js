@@ -1,7 +1,19 @@
 var START = new Date();
 var DAILY_CHART_BEGIN_TIMESTAMP = yesterday();
 
-jQuery(function ($) {
+function yesterday() {
+    var now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+}
+
+var totalBASE = 0;
+var totalHP = 0;
+var totalHC = 0;
+var totalprix = 0;
+
+var chart_elec2;
+
+$(document).ready(function () {
     Highcharts.setOptions({
         lang: {
             months: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
@@ -16,186 +28,9 @@ jQuery(function ($) {
             useUTC: false
         }
     });
-});
-
-function yesterday() {
-    var now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-}
-
-var totalBASE = 0;
-var totalHP = 0;
-var totalHC = 0;
-var totalprix = 0;
-
-var chart_elec1;
-var chart_elec2;
-
-$(document).ready(function () {
 
     refresh_chart1(DAILY_CHART_BEGIN_TIMESTAMP);
     refresh_chart2("8jours");
-
-    function init_chart1(data) {
-        return {
-            chart: {
-                zoomType: 'x',
-                renderTo: 'chart1',
-                events: {
-                    load: function (chart) {
-                        this.setTitle(null, {
-                            text: 'Construit en ' + (new Date() - START) + 'ms'
-                        });
-                        if ($('#chart1legende').length) {
-                            $("#chart1legende").html(data.subtitle);
-                        }
-                    }
-                },
-                borderColor: '#EBBA95',
-                borderWidth: 2,
-                borderRadius: 10,
-                ignoreHiddenSeries: false
-            },
-            title: {
-                text: data.title
-            },
-            subtitle: {
-                text: 'Construit en...'
-            },
-            plotOptions: {
-                areaspline: {
-                    fillColor: {
-                        linearGradient: {
-                            x1: 0,
-                            y1: 0,
-                            x2: 0,
-                            y2: 1
-                        },
-                        stops: [
-                            [0, Highcharts.getOptions().colors[0]],
-                            [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
-                        ]
-                    },
-                    marker: {
-                        enabled: false
-                    },
-                    states: {
-                        hover: {
-                            lineWidth: 1
-                        }
-                    }
-                },
-                spline: {
-                    marker: {
-                        enabled: false
-                    }
-                }
-            },
-            xAxis: {
-                type: 'datetime',
-                dateTimeLabelFormats: {
-                    hour: '%H:%M',
-                    day: '%H:%M',
-                    week: '%H:%M',
-                    month: '%H:%M'
-                }
-            },
-            yAxis: [
-                {
-                    title: {
-                        text: 'Heure Base'
-
-                    },
-                    labels: {
-                        format: '{value} W'
-
-                    },
-                    alternateGridColor: '#FAFAFA',
-                    minorGridLineWidth: 0,
-                    plotLines: [
-                        { // lignes min et max
-                            value: data.seuils.min,
-                            color: 'green',
-                            dashStyle: 'shortdash',
-                            width: 2,
-                            label: {
-                                text: 'minimum ' + data.seuils.min + 'w'
-                            }
-                        },
-                        {
-                            value: data.seuils.max,
-                            color: 'red',
-                            dashStyle: 'shortdash',
-                            width: 2,
-                            label: {
-                                text: 'maximum ' + data.seuils.max + 'w'
-                            }
-                        }
-                    ]
-                },
-                {
-                    labels: {
-                        format: '{value}°C'
-
-                    },
-                    title: {
-                        text: 'Temperature',
-                        style: {
-                            color: '#89A54E'
-                        }
-                    },
-                    opposite: true
-                }
-            ],
-            tooltip: {
-                shared: true
-            },
-            legend: {
-                layout: 'vertical',
-                align: 'left',
-                x: 120,
-                verticalAlign: 'top',
-                y: 100,
-                floating: true,
-                backgroundColor: '#FFFFFF'
-            },
-            series: [
-                {
-                    name: data.BASE_name,
-                    data: data.BASE_data,
-
-                    id: 'BASE',
-                    type: 'areaspline',
-                    threshold: null,
-                    tooltip: {
-                        valueSuffix: ' W'
-                    },
-                    showInLegend: ((data.tarif_type == "HCHP") ? false : true)
-                },
-                {
-                    name: data.Temp_name,
-                    data: data.Temp_data,
-
-                    type: 'spline',
-                    yaxis: 1,
-                    tooltip: {
-                        valueSuffix: '°C'
-                    }
-                },
-                {
-                    name: data.JPrec_name,
-                    data: data.JPrec_data,
-                    type: 'spline',
-                    width: 1,
-                    shape: 'squarepin',
-                    tooltip: {
-                        valueSuffix: ' W'
-                    }
-                }
-
-            ]
-        }
-    }
 
     function init_chart2(data) {
         return {
@@ -332,7 +167,158 @@ $(document).ready(function () {
         START = new Date();
 
         $.getJSON('json.php?query=daily&date=' + parseInt(date.getTime() / 1000), function (data) {
-            chart_elec1 = new Highcharts.Chart(init_chart1(data));
+            $('#chart1').highcharts({
+                chart: {
+                    zoomType: 'x',
+                    renderTo: 'chart1',
+                    events: {
+                        load: function (chart) {
+                            this.setTitle(null, {
+                                text: 'Construit en ' + (new Date() - START) + 'ms'
+                            });
+                            if ($('#chart1legende').length) {
+                                $("#chart1legende").html(data.subtitle);
+                            }
+                        }
+                    },
+                    borderColor: '#EBBA95',
+                    borderWidth: 2,
+                    borderRadius: 10,
+                    ignoreHiddenSeries: false
+                },
+                title: {
+                    text: data.title
+                },
+                subtitle: {
+                    text: 'Construit en...'
+                },
+                plotOptions: {
+                    areaspline: {
+                        fillColor: {
+                            linearGradient: {
+                                x1: 0,
+                                y1: 0,
+                                x2: 0,
+                                y2: 1
+                            },
+                            stops: [
+                                [0, Highcharts.getOptions().colors[0]],
+                                [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+                            ]
+                        },
+                        marker: {
+                            enabled: false
+                        },
+                        states: {
+                            hover: {
+                                lineWidth: 1
+                            }
+                        }
+                    },
+                    spline: {
+                        marker: {
+                            enabled: false
+                        }
+                    }
+                },
+                xAxis: {
+                    type: 'datetime',
+                    dateTimeLabelFormats: {
+                        hour: '%H:%M',
+                        day: '%H:%M',
+                        week: '%H:%M',
+                        month: '%H:%M'
+                    }
+                },
+                yAxis: [
+                    {
+                        title: {
+                            text: 'Heure Base'
+                        },
+                        labels: {
+                            format: '{value} W'
+                        },
+                        alternateGridColor: '#FAFAFA',
+                        minorGridLineWidth: 0,
+                        plotLines: [
+                            { // lignes min et max
+                                value: data.seuils.min,
+                                color: 'green',
+                                dashStyle: 'shortdash',
+                                width: 2,
+                                label: {
+                                    text: 'minimum ' + data.seuils.min + 'w'
+                                }
+                            },
+                            {
+                                value: data.seuils.max,
+                                color: 'red',
+                                dashStyle: 'shortdash',
+                                width: 2,
+                                label: {
+                                    text: 'maximum ' + data.seuils.max + 'w'
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        labels: {
+                            format: '{value}°C'
+                        },
+                        title: {
+                            text: 'Temperature'
+                        },
+                        opposite: true
+                    }
+                ],
+                tooltip: {
+                    shared: true
+                },
+                legend: {
+                    layout: 'vertical',
+                    align: 'left',
+                    x: 120,
+                    verticalAlign: 'top',
+                    y: 40,
+                    floating: true,
+                    backgroundColor: '#FFFFFF'
+                },
+                series: [
+                    {
+                        name: "Heure Base",
+                        data: data.BASE_data,
+
+                        type: 'areaspline',
+                        threshold: null,
+                        tooltip: {
+                            valueSuffix: ' W'
+                        },
+                        showInLegend: ((data.tarif_type == "HCHP") ? false : true)
+                    },
+                    {
+                        name: 'Temperature',
+                        data: data.Temp_data,
+
+                        type: 'spline',
+                        yaxis: 1,
+                        tooltip: {
+                            valueSuffix: '°C'
+                        }
+                    },
+                    {
+                        name: data.JPrec_name,
+                        data: data.JPrec_data,
+                        type: 'spline',
+                        width: 1,
+                        shape: 'squarepin',
+                        tooltip: {
+                            valueSuffix: ' W'
+                        }
+                    }
+
+
+                ]
+            });
         });
     }
 
