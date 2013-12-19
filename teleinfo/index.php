@@ -11,8 +11,7 @@ date_default_timezone_set("Europe/Paris");
 
     <link rel="shortcut icon" href="./favicon.ico">
 
-    <script type="text/javascript" src="./js/jquery-1.6.2.min.js"></script>
-    <script type="text/javascript" src="./js/jquery-ui-1.8.5.custom.min.js"></script>
+    <script type="text/javascript" src="./js/jquery-2.0.3.min.js"></script>
 
     <script type="text/javascript" src="./js/highcharts.js"></script>
     <script type='text/javascript' src="teleinfo.js"></script>
