@@ -311,7 +311,7 @@ function history() {
   }
   
   return array(
-    'title' => "Consomation sur $xlabel",
+    'title' => "Consommation sur $xlabel",
     'subtitle' => $subtitle,
     'debut' => $date_deb_UTC,
     'BASE_name' => 'Heures de Base',
