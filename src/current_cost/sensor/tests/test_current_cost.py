@@ -1,12 +1,13 @@
 from Queue import Queue, Empty
 from json import dumps, loads
 import unittest
-from current_cost import CURRENT_COST, CurrentCostReader
 from datetime import datetime
 import current_cost
+from current_cost.sensor.current_cost import CurrentCostReader, CURRENT_COST
 import redis
 
 __author__ = 'bruno'
+
 
 class RedisSubscribeLoopTest(unittest.TestCase):
     def setUp(self):
@@ -33,6 +34,7 @@ class RedisSubscribeLoopTest(unittest.TestCase):
         self.assertIsNotNone(event)
         self.assertDictEqual(loads(event), expected)
 
+
 class MockSerial():
     def __init__(self): self.readqueue = Queue()
     def readline(self, *args, **kwargs):
@@ -41,6 +43,7 @@ class MockSerial():
         except Empty: return None
     def send(self, message): self.readqueue.put(message)
     def close(self):pass
+
 
 class CurrentCostReaderTest(unittest.TestCase):
     def setUp(self):

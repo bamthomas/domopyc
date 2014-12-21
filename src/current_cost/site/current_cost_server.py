@@ -1,15 +1,16 @@
 from datetime import datetime
 from json import loads
+from current_cost.sensor.current_cost import RedisSubscriber
 import flask
 from flask.templating import render_template
 import redis
-from current_cost import RedisSubscriber
 
 __author__ = 'bruno'
 
 REDIS = redis.Redis()
 app = flask.Flask(__name__)
 now = datetime.now
+
 
 class LiveDataMessageHandler(object):
     def __init__(self, myredis, message_period_in_minute=60):
@@ -28,6 +29,7 @@ class LiveDataMessageHandler(object):
         return map(lambda json: loads(json), self.myredis.zrangebyscore('current_cost_live', self.get_current_timestamp() - since_minutes * 60, self.get_current_timestamp()))
 
 LIVE_DATA_MESSAGE_HANDLER = LiveDataMessageHandler(REDIS)
+
 
 def message_stream():
     pubsub = REDIS.pubsub()

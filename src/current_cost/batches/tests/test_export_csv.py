@@ -2,12 +2,13 @@ from json import dumps
 from tempfile import mktemp
 import unittest
 from datetime import datetime
+from current_cost.batches.export_csv import ExportBatch, DIR
 from os.path import basename, join
 import redis
-from export_csv import ExportBatch, DIR
 from mockftp_server import FTPStubServer
 
 __author__ = 'bruno'
+
 
 class ExportBatchCsvTest(unittest.TestCase):
     def test_export_temp_csv_file(self):
