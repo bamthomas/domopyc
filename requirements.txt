@@ -5,3 +5,4 @@ redis
 rednose
 flask
 MySQL-python
+rfxcom
