@@ -1,8 +1,11 @@
 /*
+ * from :
  * connectingStuff, Oregon Scientific v2.1 Emitter
  * http://connectingstuff.net/blog/encodage-protocoles-oregon-scientific-sur-arduino/
  *
  * Copyright (C) 2013 olivier.lebrun@gmail.com
+ * ---------------
+ * and @bam_thomas
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
