@@ -6,5 +6,4 @@ It is a mix between :
 
 # What for ?
 
-It allows to simulate a thermometer with an arduino and a one wire sensor (for example to send pool temperature to a RFXCOM receiver).
-
+It allows to simulate a THGN122/123 / THGN132 / THGR122/228/238/268 thermometer with an arduino and a one wire sensor (for example to send pool temperature to a RFXCOM receiver).
