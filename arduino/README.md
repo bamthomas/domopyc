@@ -1,6 +1,6 @@
 # What ?
 
-It is a mix between :
+It is a refactored mix between :
 - OneWire sensor reading on arduino site : http://playground.arduino.cc/Learning/OneWire
 - Oregon Scientific protocol with arduino : http://connectingstuff.net/blog/encodage-protocoles-oregon-scientific-sur-arduino/ . Specification is here : http://wmrx00.sourceforge.net/Arduino/OregonScientific-RF-Protocols.pdf
 
