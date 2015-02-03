@@ -1,4 +1,5 @@
-from asyncio.test_utils import TestLoop
+from asyncio.test_utils import TestLoop, run_briefly
+import logging
 from io import StringIO
 from json import dumps
 import unittest
@@ -8,6 +9,10 @@ import asyncio_redis
 import redis
 from rfxcom import protocol
 from rfxcom.transport import AsyncioTransport
+
+root = logging.getLogger()
+logging.basicConfig()
+root.setLevel(logging.INFO)
 
 
 class RfxcomReader(object):
@@ -41,21 +46,39 @@ class MockDevice(object):
         self.fd = StringIO()
 
 
+class TestAsyncioTransport(unittest.TestCase):
+    def test_fumee(self):
+        def gen():
+            yield {'key': 'value'}
+
+        def cb(packet):
+            print("pouet")
+            self.assertIsNotNone(packet)
+
+        loop = TestLoop(gen=gen)
+        device = MockDevice()
+        rfxcom_transport = AsyncioTransport(device, loop, callback=cb)
+        loop._run_once()
+
+
 class TestRfxcomReader(unittest.TestCase):
     def setUp(self):
         self.redis = redis.Redis()
 
     def test_read_data(self):
         dev = MockDevice()
-        RfxcomReader(dev, TestLoop(), RedisPublisher())
-        rfxcom_data = {'packet_length': 10, 'packet_type_name': 'Temperature and humidity sensors', 'sub_type': 1,
+        def gen():
+            yield {'packet_length': 10, 'packet_type_name': 'Temperature and humidity sensors', 'sub_type': 1,
                        'packet_type': 82, 'temperature': 22.2, 'humidity_status': 0, 'humidity': 0,
                        'sequence_number': 1,
                        'battery_signal_level': 128, 'signal_strength': 128, 'id': '0xBB02',
                        'sub_type_name': 'THGN122/123, THGN132, THGR122/228/238/268'}
+        loop = TestLoop(gen=gen)
 
-        dev.fd.write(str(rfxcom_data))
+        RfxcomReader(dev, loop, RedisPublisher())
 
         pubsub = self.redis.pubsub()
         pubsub.subscribe(RedisPublisher.RFXCOM_KEY)
-        self.assertDictEqual(rfxcom_data, pubsub.listen())
+        message = pubsub.get_message(True)
+
+        self.assertDictEqual({}, message)

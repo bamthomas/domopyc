@@ -20,8 +20,7 @@ def default_callback(packet):
 
 
 try:
-    rfxcom = AsyncioTransport(dev_name, loop, callbacks={
-        protocol.TempHumidity: temp_humidity_handler, '*': default_callback})
+    AsyncioTransport(dev_name, loop, callbacks={protocol.TempHumidity: temp_humidity_handler, '*': default_callback})
     loop.run_forever()
 finally:
     loop.close()
