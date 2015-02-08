@@ -44,16 +44,16 @@ class RfxcomReader(object):
         return AsyncioTransport(device, event_loop,
                                 callbacks={protocol.TempHumidity: self.handle_temp_humidity,
                                            '*': self.default_callback})
-    @asyncio.coroutine
+
     def handle_temp_humidity(self, packet):
-        yield from self.publisher.publish(packet.data)
+        asyncio.async(self.publisher.publish(packet.data))
 
     def default_callback(self, packet):
         logger.info('packet <%s> not handled' % packet)
 
-
-try:
-    RfxcomReader(dev_name, RedisPublisher())
-    get_event_loop().run_forever()
-finally:
-    get_event_loop().close()
+if __name__ == '__main__':
+    try:
+        RfxcomReader(dev_name, RedisPublisher())
+        get_event_loop().run_forever()
+    finally:
+        get_event_loop().close()

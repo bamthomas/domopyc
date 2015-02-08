@@ -7,7 +7,7 @@ import os
 import asyncio_redis
 from rfxcom.protocol.base import BasePacket
 import serial
-from src.domopyc_rfxcom.emetteur_recepteur import RedisPublisher, RfxcomReader
+from domopyc_rfxcom.emetteur_recepteur import RedisPublisher, RfxcomReader
 
 
 class TestRfxcomReader(unittest.TestCase):
@@ -31,8 +31,7 @@ class TestRfxcomReader(unittest.TestCase):
              'battery_signal_level': 128, 'signal_strength': 128, 'id': '0xBB02',
              'sub_type_name': 'THGN122/123, THGN132, THGR122/228/238/268'})
 
-        asyncio.get_event_loop().run_until_complete(
-            asyncio.Task(RfxcomReaderForTest(RedisPublisher()).handle_temp_humidity(packet)))
+        RfxcomReaderForTest(RedisPublisher()).handle_temp_humidity(packet)
 
         @asyncio.coroutine
         def receive_message():
@@ -61,7 +60,7 @@ class TestRfxcomAcceptance(unittest.TestCase):
         ser = serial.Serial(s_name)
 
         RfxcomReader(ser, RedisPublisher())
-        ser.write(bytes([0x00, 0x00, 0x00, 0x00, 0x08, 0x00]))
+        ser.write(bytes([0x0a, 0x52, 0x01, 0x03, 0xbb, 0x02, 0x00, 0xd8, 0x00, 0x00, 0x70]))
 
         @asyncio.coroutine
         def receive_message():
