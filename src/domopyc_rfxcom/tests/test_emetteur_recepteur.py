@@ -1,84 +1,85 @@
-from asyncio.test_utils import TestLoop, run_briefly
-import logging
-from io import StringIO
-from json import dumps
+import pty
+from json import loads
 import unittest
 import asyncio
 
+import os
 import asyncio_redis
-import redis
-from rfxcom import protocol
-from rfxcom.transport import AsyncioTransport
-
-root = logging.getLogger()
-logging.basicConfig()
-root.setLevel(logging.INFO)
-
-
-class RfxcomReader(object):
-    def __init__(self, device, event_loop, publisher):
-        self.publisher = publisher
-        self.rfxcom_transport = AsyncioTransport(device, event_loop,
-                             callbacks={protocol.TempHumidity: self.handle_temp_humidity, '*': self.default_callback})
-
-    def handle_temp_humidity(self, packet):
-        self.publisher.publish(packet.data)
-
-    def default_callback(self, packet):
-        pass
-
-
-class RedisPublisher(object):
-    RFXCOM_KEY = "rfxcom"
-
-    def __init__(self, host='localhost', port=6379):
-        self.port = port
-        self.host = host
-
-    @asyncio.coroutine
-    def publish(self, event):
-        connection = yield asyncio_redis.Connection.create(self.host, self.port)
-        yield from connection.publish(self.RFXCOM_KEY, dumps(event))
-
-
-class MockDevice(object):
-    def __init__(self):
-        self.fd = StringIO()
-
-
-class TestAsyncioTransport(unittest.TestCase):
-    def test_fumee(self):
-        def gen():
-            yield {'key': 'value'}
-
-        def cb(packet):
-            print("pouet")
-            self.assertIsNotNone(packet)
-
-        loop = TestLoop(gen=gen)
-        device = MockDevice()
-        rfxcom_transport = AsyncioTransport(device, loop, callback=cb)
-        loop._run_once()
+from rfxcom.protocol.base import BasePacket
+import serial
+from src.domopyc_rfxcom.emetteur_recepteur import RedisPublisher, RfxcomReader
 
 
 class TestRfxcomReader(unittest.TestCase):
+
     def setUp(self):
-        self.redis = redis.Redis()
+        @asyncio.coroutine
+        def setup_redis():
+            self.connection = yield from asyncio_redis.Connection.create(host='localhost', port=6379)
+            self.subscriber = yield from self.connection.start_subscribe()
+            yield from self.subscriber.subscribe([RedisPublisher.RFXCOM_KEY])
+        asyncio.get_event_loop().run_until_complete(setup_redis())
+
+    def tearDown(self):
+        self.connection.close()
 
     def test_read_data(self):
-        dev = MockDevice()
-        def gen():
-            yield {'packet_length': 10, 'packet_type_name': 'Temperature and humidity sensors', 'sub_type': 1,
-                       'packet_type': 82, 'temperature': 22.2, 'humidity_status': 0, 'humidity': 0,
-                       'sequence_number': 1,
-                       'battery_signal_level': 128, 'signal_strength': 128, 'id': '0xBB02',
-                       'sub_type_name': 'THGN122/123, THGN132, THGR122/228/238/268'}
-        loop = TestLoop(gen=gen)
+        packet = DummyPacket().load(
+            {'packet_length': 10, 'packet_type_name': 'Temperature and humidity sensors', 'sub_type': 1,
+             'packet_type': 82, 'temperature': 22.2, 'humidity_status': 0, 'humidity': 0,
+             'sequence_number': 1,
+             'battery_signal_level': 128, 'signal_strength': 128, 'id': '0xBB02',
+             'sub_type_name': 'THGN122/123, THGN132, THGR122/228/238/268'})
 
-        RfxcomReader(dev, loop, RedisPublisher())
+        asyncio.get_event_loop().run_until_complete(
+            asyncio.Task(RfxcomReaderForTest(RedisPublisher()).handle_temp_humidity(packet)))
 
-        pubsub = self.redis.pubsub()
-        pubsub.subscribe(RedisPublisher.RFXCOM_KEY)
-        message = pubsub.get_message(True)
+        @asyncio.coroutine
+        def receive_message():
+            message = yield from self.subscriber.next_published()
+            self.assertDictEqual(packet.data, loads(message.value))
 
-        self.assertDictEqual({}, message)
+        asyncio.get_event_loop().run_until_complete(receive_message())
+
+
+class TestRfxcomAcceptance(unittest.TestCase):
+
+    def setUp(self):
+        @asyncio.coroutine
+        def setup_redis():
+            self.connection = yield from asyncio_redis.Connection.create(host='localhost', port=6379)
+            self.subscriber = yield from self.connection.start_subscribe()
+            yield from self.subscriber.subscribe([RedisPublisher.RFXCOM_KEY])
+        asyncio.get_event_loop().run_until_complete(setup_redis())
+
+    def tearDown(self):
+        self.connection.close()
+
+    def test_read_data_and_send_to_redis(self):
+        master, slave = pty.openpty()
+        s_name = os.ttyname(slave)
+        ser = serial.Serial(s_name)
+
+        RfxcomReader(ser, RedisPublisher())
+        ser.write(bytes([0x00, 0x00, 0x00, 0x00, 0x08, 0x00]))
+
+        @asyncio.coroutine
+        def receive_message():
+            message = yield from self.subscriber.next_published()
+            self.assertDictEqual({'foo': 'bar'}, loads(message.value))
+
+        asyncio.get_event_loop().run_until_complete(receive_message())
+
+
+class RfxcomReaderForTest(RfxcomReader):
+    def __init__(self, publisher, event_loop=asyncio.get_event_loop()):
+        super().__init__(None, publisher, event_loop)
+
+    def create_transport(self, device, event_loop):
+        return None
+
+
+class DummyPacket(BasePacket):
+    def load(self, data):
+        self.data = data
+        return self

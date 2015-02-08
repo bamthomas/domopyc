@@ -1,6 +1,4 @@
 rfxcom
 asyncio_redis
-
 # tests
-redis
 nose
