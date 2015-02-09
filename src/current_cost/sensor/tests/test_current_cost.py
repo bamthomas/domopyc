@@ -1,10 +1,11 @@
-from Queue import Queue, Empty
 from json import dumps, loads
+from queue import Queue, Empty
 import unittest
 from datetime import datetime
-import current_cost
-from current_cost.sensor.current_cost import CurrentCostReader, CURRENT_COST
+
 import redis
+from current_cost.sensor import current_cost
+from current_cost.sensor.current_cost import CURRENT_COST, CurrentCostReader
 
 __author__ = 'bruno'
 
@@ -32,7 +33,7 @@ class RedisSubscribeLoopTest(unittest.TestCase):
 
         event = self.message_handler.queue.get()
         self.assertIsNotNone(event)
-        self.assertDictEqual(loads(event), expected)
+        self.assertDictEqual(loads(event.decode(encoding='UTF-8')), expected)
 
 
 class MockSerial():
@@ -70,6 +71,7 @@ class CurrentCostReaderTest(unittest.TestCase):
 
         self.assertDictEqual(self.queue.get(timeout=1), {'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':21.4})
 
+
 class AverageMessageHandlerTestWithoutAverage(unittest.TestCase):
     def setUp(self):
         self.myredis = redis.Redis()
@@ -90,6 +92,7 @@ class AverageMessageHandlerTestWithoutAverage(unittest.TestCase):
         self.message_handler.handle(dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':21.4}))
 
         self.assertIsNone(self.myredis.ttl('current_cost_2012-12-13'))
+
 
 class AverageMessageHandlerTest(unittest.TestCase):
     def setUp(self):

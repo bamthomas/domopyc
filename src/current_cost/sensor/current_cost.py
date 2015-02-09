@@ -1,5 +1,6 @@
 # coding=utf-8
 from datetime import datetime, timedelta
+from functools import reduce
 from json import loads, dumps
 import logging
 import threading
@@ -83,7 +84,13 @@ class AverageMessageHandler(object):
 
     def get_average_json_message(self, date):
         watt_and_temp = map(lambda msg: (msg['watt'], msg['temperature']), self.messages)
-        watt_sum, temp_sum = reduce(lambda (x, t), (y, v): (x + y, t + v), watt_and_temp)
+
+        def add_tuple(x_t, y_v):
+            x, t = x_t
+            y, v = y_v
+            return x + y, t + v
+
+        watt_sum, temp_sum = reduce(add_tuple, watt_and_temp)
         nb_messages = len(self.messages)
         return {'date': date, 'watt': watt_sum / nb_messages, 'temperature': temp_sum / nb_messages,
                 'nb_data': nb_messages, 'minutes': int(self.delta_minutes.total_seconds() / 60)}

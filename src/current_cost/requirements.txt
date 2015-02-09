@@ -4,4 +4,4 @@ pyserial
 redis
 rednose
 flask
-MySQL-python
+pymysql
