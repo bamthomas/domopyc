@@ -16,6 +16,9 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
         cursor.execute("drop table if EXISTS current_cost")
         cursor.close()
 
+    def tearDown(self):
+        self.db.close()
+
     def test_create_table_if_it_doesnot_exist(self):
         cursor = self.db.cursor()
 

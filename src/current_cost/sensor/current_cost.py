@@ -124,15 +124,17 @@ class MysqlAverageMessageHandler(AverageMessageHandler):
     def __init__(self, db, average_period_minutes=0):
         super(MysqlAverageMessageHandler, self).__init__(average_period_minutes)
         self.db = db
-        with self.db:
-            self.db.cursor().execute(MysqlAverageMessageHandler.CREATE_TABLE_SQL)
+        cursor = self.db.cursor()
+        cursor.execute(MysqlAverageMessageHandler.CREATE_TABLE_SQL)
+        cursor.close()
 
     def save(self, message_date, average_message):
-        with self.db:
-            self.db.cursor().execute(
-                "INSERT INTO current_cost (timestamp, watt, minutes, nb_data, temperature) values ('%s', %s, %s, %s, %s) " % (
-                    message_date, average_message['watt'], average_message['minutes'], average_message['nb_data'],
-                    average_message['temperature']))
+        cursor = self.db.cursor()
+        cursor.execute(
+            "INSERT INTO current_cost (timestamp, watt, minutes, nb_data, temperature) values ('%s', %s, %s, %s, %s) " % (
+                message_date, average_message['watt'], average_message['minutes'], average_message['nb_data'],
+                average_message['temperature']))
+        cursor.close()
 
 
 if __name__ == '__main__':
