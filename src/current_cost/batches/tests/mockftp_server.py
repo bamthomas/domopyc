@@ -20,24 +20,27 @@ class FTPServer(socketserver.BaseRequestHandler):
             self.finish()
         return self
 
+    def send(self, str_cmd):
+        self.request.send(bytes(str_cmd, 'UTF-8'))
+
     def handle(self):
         # Establish connection
-        self.request.send('220 (FtpStubServer 0.1a)\r\n')
+        self.send('220 (FtpStubServer 0.1a)\r\n')
         self.communicating = True
         while self.communicating:
             cmd = self.request.recv(1024)
             if cmd:
                 self.interactions.append(cmd)
-                getattr(self, '_' + cmd[:4])(cmd)
+                getattr(self, '_' + cmd[:4].decode('UTF-8'))(cmd)
 
     def _USER(self, cmd):
-        self.request.send('331 Please specify password.\r\n')
+        self.send('331 Please specify password.\r\n')
 
     def _PASS(self, cmd):
-        self.request.send('230 You are now logged in.\r\n')
+        self.send('230 You are now logged in.\r\n')
 
     def _TYPE(self, cmd):
-        self.request.send('200 Switching to ascii mode.\r\n')
+        self.send('200 Switching to ascii mode.\r\n')
 
     def _PASV(self, cmd):
         self.data_handler = FTPDataServer(self.interactions, self.files)
@@ -51,29 +54,29 @@ class FTPServer(socketserver.BaseRequestHandler):
         self.t2 = threading.Thread(target=start_data_server)
         self.t2.start()
         time.sleep(0.1)
-        self.request.send(
+        self.send(
             '227 Entering Passive Mode. (127,0,0,1,%s,%s)\r\n' % (int((self.port + 1) / 256), (self.port + 1) % 256))
 
     def _STOR(self, cmd):
-        self.request.send('150 Okay to send data\r\n')
+        self.send('150 Okay to send data\r\n')
         time.sleep(0.2)
-        self.request.send('226 Got the file\r\n')
+        self.send('226 Got the file\r\n')
         self.t2.join(1)
 
     def _LIST(self, cmd):
-        self.request.send('150 Accepted data connection\r\n')
+        self.send('150 Accepted data connection\r\n')
         time.sleep(0.2)
-        self.request.send('226 You got the listings now\r\n')
+        self.send('226 You got the listings now\r\n')
         self.t2.join(1)
 
     def _RETR(self, cmd):
-        self.request.send('150 Accepted data connection\r\n')
+        self.send('150 Accepted data connection\r\n')
         time.sleep(0.2)
-        self.request.send('226 Enjoy your file\r\n')
+        self.send('226 Enjoy your file\r\n')
         self.t2.join(1)
 
     def _QUIT(self, cmd):
-        self.request.send('221 Goodbye\r\n')
+        self.send('221 Goodbye\r\n')
         self.communicating = False
         time.sleep(0.001)
 
@@ -96,9 +99,9 @@ class FTPDataServer(socketserver.StreamRequestHandler):
             self.finish()
 
     def handle(self):
-        while not hasattr(self, '_' + self.interactions[-1:][0][:4]):
+        while not hasattr(self, '_' + self.interactions[-1:][0][:4].decode('UTF-8')):
             time.sleep(0.01)
-        getattr(self, '_' + self.interactions[-1:][0][:4])()
+        getattr(self, '_' + self.interactions[-1:][0][:4].decode('UTF-8'))()
 
     def filename(self):
         return self.interactions[-1:][0][5:].strip()
