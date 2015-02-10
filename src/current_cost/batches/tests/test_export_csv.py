@@ -19,9 +19,9 @@ class ExportBatchCsvTest(unittest.TestCase):
         filename = ExportBatch(date=datetime(2012, 12, 13)).create_csv_file()
 
         with open(filename, mode='r') as csv:
-            self.assertEquals('date;watt;nb_data;temperature\n', csv.readline())
-            self.assertEquals('2012-12-13T16:10:07;420;123;22.0\n', csv.readline())
-            self.assertEquals('2012-12-13T14:10:07;400;234;20.0\n', csv.readline())
+            self.assertEquals('date;nb_data;temperature;watt\n', csv.readline())
+            self.assertEquals('2012-12-13T16:10:07;123;22.0;420\n', csv.readline())
+            self.assertEquals('2012-12-13T14:10:07;234;20.0;400\n', csv.readline())
 
     def test_export_temp_csv_file_no_key_does_nothing(self):
         self.assertIsNone(ExportBatch(date=datetime(2012, 12, 14)).create_csv_file())
