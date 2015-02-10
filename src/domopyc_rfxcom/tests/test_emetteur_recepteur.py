@@ -41,35 +41,6 @@ class TestRfxcomReader(unittest.TestCase):
         asyncio.get_event_loop().run_until_complete(receive_message())
 
 
-class TestRfxcomAcceptance(unittest.TestCase):
-
-    def setUp(self):
-        @asyncio.coroutine
-        def setup_redis():
-            self.connection = yield from asyncio_redis.Connection.create(host='localhost', port=6379)
-            self.subscriber = yield from self.connection.start_subscribe()
-            yield from self.subscriber.subscribe([RedisPublisher.RFXCOM_KEY])
-        asyncio.get_event_loop().run_until_complete(setup_redis())
-
-    def tearDown(self):
-        self.connection.close()
-
-    def test_read_data_and_send_to_redis(self):
-        master, slave = pty.openpty()
-        s_name = os.ttyname(slave)
-        ser = serial.Serial(s_name)
-
-        RfxcomReader(ser, RedisPublisher())
-        ser.write(bytes([0x0a, 0x52, 0x01, 0x03, 0xbb, 0x02, 0x00, 0xd8, 0x00, 0x00, 0x70]))
-
-        @asyncio.coroutine
-        def receive_message():
-            message = yield from self.subscriber.next_published()
-            self.assertDictEqual({'foo': 'bar'}, loads(message.value))
-
-        asyncio.get_event_loop().run_until_complete(receive_message())
-
-
 class RfxcomReaderForTest(RfxcomReader):
     def __init__(self, publisher, event_loop=asyncio.get_event_loop()):
         super().__init__(None, publisher, event_loop)
