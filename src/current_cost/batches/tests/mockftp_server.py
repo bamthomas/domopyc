@@ -1,10 +1,9 @@
-import threading,time
-import SocketServer
+import threading, time
+import socketserver
 
 
 # cf https://github.com/tarttelin/Python-Stub-Server
-class FTPServer(SocketServer.BaseRequestHandler):
-
+class FTPServer(socketserver.BaseRequestHandler):
     def __init__(self, port, interactions, files):
         self.port = port
         self.interactions = interactions
@@ -16,9 +15,9 @@ class FTPServer(SocketServer.BaseRequestHandler):
         self.server = server
         self.setup()
         try:
-           self.handle()
+            self.handle()
         finally:
-           self.finish()
+            self.finish()
         return self
 
     def handle(self):
@@ -42,15 +41,18 @@ class FTPServer(SocketServer.BaseRequestHandler):
 
     def _PASV(self, cmd):
         self.data_handler = FTPDataServer(self.interactions, self.files)
+
         def start_data_server():
-            self.port = self.port + 1
-            data_server = SocketServer.TCPServer(('localhost',self.port + 1), self.data_handler)
+            self.port += 1
+            data_server = socketserver.TCPServer(('localhost', self.port + 1), self.data_handler)
             data_server.handle_request()
             data_server.server_close()
+
         self.t2 = threading.Thread(target=start_data_server)
         self.t2.start()
         time.sleep(0.1)
-        self.request.send('227 Entering Passive Mode. (127,0,0,1,%s,%s)\r\n' %(int((self.port + 1)/256), (self.port + 1) % 256))
+        self.request.send(
+            '227 Entering Passive Mode. (127,0,0,1,%s,%s)\r\n' % (int((self.port + 1) / 256), (self.port + 1) % 256))
 
     def _STOR(self, cmd):
         self.request.send('150 Okay to send data\r\n')
@@ -75,8 +77,8 @@ class FTPServer(SocketServer.BaseRequestHandler):
         self.communicating = False
         time.sleep(0.001)
 
-class FTPDataServer(SocketServer.StreamRequestHandler):
 
+class FTPDataServer(socketserver.StreamRequestHandler):
     def __init__(self, interactions, files):
         self.interactions = interactions
         self.files = files
@@ -88,10 +90,10 @@ class FTPDataServer(SocketServer.StreamRequestHandler):
         self.server = server
         self.setup()
         try:
-          self.handle()
-          return self
+            self.handle()
+            return self
         finally:
-          self.finish()
+            self.finish()
 
     def handle(self):
         while not hasattr(self, '_' + self.interactions[-1:][0][:4]):
@@ -110,8 +112,8 @@ class FTPDataServer(SocketServer.StreamRequestHandler):
     def _RETR(self):
         self.wfile.write(self.files[self.filename()])
 
-class FTPStubServer(object):
 
+class FTPStubServer(object):
     def __init__(self, port):
         self.port = port
         self._interactions = []
@@ -126,7 +128,8 @@ class FTPStubServer(object):
         self._files[name] = content
 
     def run(self):
-        self.server = SocketServer.TCPServer(('localhost',self.port), FTPServer(self.port, self._interactions, self._files))
+        self.server = socketserver.TCPServer(('localhost', self.port),
+                                             FTPServer(self.port, self._interactions, self._files))
         self.server.timeout = 2
         self.server_thread = threading.Thread(target=self._run)
         self.server_thread.setDaemon(True)
