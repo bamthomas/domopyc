@@ -28,6 +28,7 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
         cursor.execute("show tables like 'current_cost'")
         current_cost_table = cursor.fetchall()
         self.assertEquals((('current_cost',),), current_cost_table)
+        cursor.close()
 
     def test_average(self):
         message_handler = current_cost.MysqlAverageMessageHandler(self.db, average_period_minutes=10)
@@ -46,6 +47,7 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
         cursor.execute("select timestamp, watt, minutes, nb_data, temperature from current_cost")
         rows = cursor.fetchall()
         self.assertEqual((datetime(2012, 12, 13, 14, 10, 7), 400, 10, 3, 20.0), rows[0])
+        cursor.close()
 
     def nb_table_rows(self, table):
         with self.db:
