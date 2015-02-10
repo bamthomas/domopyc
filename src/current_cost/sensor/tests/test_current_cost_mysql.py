@@ -13,7 +13,7 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
         self.db = pymysql.connect(host='localhost', user='test', passwd='test', db='test')
 
         cursor = self.db.cursor()
-        cursor.execute("drop table current_cost")
+        cursor.execute("drop table if EXISTS current_cost")
         cursor.close()
 
     def test_create_table_if_it_doesnot_exist(self):
