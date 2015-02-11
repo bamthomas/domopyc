@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/bamthomas/DomoPyc.png)](https://travis-ci.org/bamthomas/DomoPyc)
 # Description
 
 Here are some python scripts running with Current Cost sensor (http://www.currentcost.com/) for :
