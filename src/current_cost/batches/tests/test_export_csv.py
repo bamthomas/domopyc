@@ -1,11 +1,11 @@
 from json import dumps
-from tempfile import mktemp
 import unittest
 from datetime import datetime
-from current_cost.batches.export_csv import ExportBatch, DIR
-from os.path import basename, join
+
+from current_cost.batches.export_csv import ExportBatch
+from os.path import join
 import redis
-from mockftp_server import FTPStubServer
+
 
 __author__ = 'bruno'
 
@@ -33,28 +33,4 @@ class ExportBatchCsvTest(unittest.TestCase):
             file.writelines(['this;is;a;previous;temp;csv;file\n'])
 
         self.assertEquals(batch.create_csv_file(), filename)
-
-
-class ExportBatchFtpSendTest(unittest.TestCase):
-    def setUp(self):
-        self.server = FTPStubServer(8998)
-        self.server.run()
-
-    def tearDown(self):
-        self.server.stop()
-
-    def test_send_ftp(self):
-        filename = mktemp()
-        with open(filename, 'w') as file:
-            file.writelines(['this is a line in the file\n', 'this is another line in the file'])
-
-        ExportBatch().ftp_send(filename, 'localhost', 8998, 'test', 'pass')
-
-        self.assertEquals(self.server._interactions[:3], ['USER test\r\n', 'PASS pass\r\n', 'TYPE A\r\n'])
-        self.assertEquals(self.server.files(join(DIR, basename(filename))), 'this is a line in the file\r\nthis is another line in the file' )
-
-    def test_send_ftp_none_filename_does_nothing(self):
-        ExportBatch().ftp_send(None)
-        self.assertEquals(len(self.server._interactions), 0)
-
 
