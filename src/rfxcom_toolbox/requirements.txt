@@ -1,0 +1,4 @@
+rfxcom
+asyncio_redis
+# tests
+nose
