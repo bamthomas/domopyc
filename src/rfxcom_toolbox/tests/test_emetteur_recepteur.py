@@ -1,4 +1,5 @@
 from datetime import datetime
+import functools
 from json import loads, dumps
 import unittest
 import asyncio
@@ -9,20 +10,32 @@ from rfxcom.protocol.base import BasePacket
 from rfxcom_toolbox.emetteur_recepteur import RedisPublisher, RfxcomReader
 
 
-class TestRfxcomReader(unittest.TestCase):
+def async_coro(f):
+    def wrap(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            coro = asyncio.coroutine(f)
+            future = coro(*args, **kwargs)
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(future)
+        return wrapper
+    return wrap(f)
 
+
+class WithRedis(unittest.TestCase):
+    @async_coro
     def setUp(self):
-        @asyncio.coroutine
-        def setup_redis():
-            self.connection = yield from asyncio_redis.Connection.create(host='localhost', port=6379)
-            self.subscriber = yield from self.connection.start_subscribe()
-            yield from self.subscriber.subscribe([RedisPublisher.RFXCOM_KEY])
-        asyncio.get_event_loop().run_until_complete(setup_redis())
+        self.connection = yield from asyncio_redis.Connection.create(host='localhost', port=6379)
 
     def tearDown(self):
         self.connection.close()
 
+
+class TestRfxcomReader(WithRedis):
+    @async_coro
     def test_read_data(self):
+        self.subscriber = yield from self.connection.start_subscribe()
+        yield from self.subscriber.subscribe([RedisPublisher.RFXCOM_KEY])
         packet = DummyPacket().load(
             {'packet_length': 10, 'packet_type_name': 'Temperature and humidity sensors', 'sub_type': 1,
              'packet_type': 82, 'temperature': 22.2, 'humidity_status': 0, 'humidity': 0,
@@ -32,12 +45,8 @@ class TestRfxcomReader(unittest.TestCase):
 
         RfxcomReaderForTest(RedisPublisher()).handle_temp_humidity(packet)
 
-        @asyncio.coroutine
-        def receive_message():
-            message = yield from self.subscriber.next_published()
-            self.assertDictEqual(packet.data, loads(message.value))
-
-        asyncio.get_event_loop().run_until_complete(receive_message())
+        message = yield from self.subscriber.next_published()
+        self.assertDictEqual(packet.data, loads(message.value))
 
 
 class RfxcomPoolTempSubscriber(object):
@@ -48,14 +57,14 @@ class RfxcomPoolTempSubscriber(object):
         def setup_redis():
             self.subscriber = yield from self.redis_conn.start_subscribe()
             yield from self.subscriber.subscribe([RedisPublisher.RFXCOM_KEY])
-        asyncio.get_event_loop().run_until_complete(setup_redis())
+        asyncio.get_event_loop().call_soon(setup_redis())
 
     def start(self):
-        asyncio.async(self.loop())
+        asyncio.async(self.message_loop())
         return self
 
     @asyncio.coroutine
-    def loop(self):
+    def message_loop(self):
         while True:
             message_str = yield from self.subscriber.next_published()
             message = loads(message_str.value)
@@ -69,22 +78,14 @@ class RfxcomPoolTempSubscriber(object):
         return float(list(d)[0])
 
 
-class TestPoolSubscriber(unittest.TestCase):
-    def setUp(self):
-        @asyncio.coroutine
-        def setup_redis():
-            self.connection = yield from asyncio_redis.Pool.create(host='localhost', port=6379, poolsize=2)
-        asyncio.get_event_loop().run_until_complete(setup_redis())
-
+class TestPoolSubscriber(WithRedis):
+    @async_coro
     def test_read_one_data(self):
         pool_temp = RfxcomPoolTempSubscriber(self.connection).start()
-        asyncio.get_event_loop().run_until_complete(self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime.now().isoformat(), 'temperature': 3.0})))
+        yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime.now().isoformat(), 'temperature': 3.0}))
 
-        @asyncio.coroutine
-        def check_val():
-            value = yield from pool_temp.get_average()
-            self.assertEqual(3.0, value)
-        asyncio.get_event_loop().run_until_complete(check_val())
+        value = yield from pool_temp.get_average()
+        self.assertEqual(3.0, value)
 
 
 class RfxcomReaderForTest(RfxcomReader):
