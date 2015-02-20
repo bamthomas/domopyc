@@ -51,9 +51,17 @@ class TestRfxcomReader(WithRedis):
 
 class TestPoolSubscriber(WithRedis):
     @async_coro
+    def test_average_no_data(self):
+        pool_temp = RfxcomPoolTempSubscriber(self.connection).start()
+
+        value = yield from pool_temp.get_average()
+        self.assertEqual(0.0, value)
+
+    @async_coro
     def test_average_one_data(self):
         pool_temp = RfxcomPoolTempSubscriber(self.connection).start()
         yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime.now().isoformat(), 'temperature': 3.0}))
+        yield from asyncio.sleep(1) # beurk, needs active asyncio.locks.Condition.wait_for condition or similar
 
         value = yield from pool_temp.get_average()
         self.assertEqual(3.0, value)

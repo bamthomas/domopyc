@@ -39,7 +39,6 @@ class RfxcomPoolTempSubscriber(object):
         while True:
             message_str = yield from self.subscriber.next_published()
             message = loads(message_str.value)
-            print(message)
             message['date'] = iso8601.parse_date(message['date'])
             yield from self.redis_conn.zadd(RfxcomPoolTempSubscriber.key, {str(message['temperature']): message['date'].timestamp()})
 
@@ -47,7 +46,7 @@ class RfxcomPoolTempSubscriber(object):
     def get_average(self):
         val = yield from self.redis_conn.zrange(RfxcomPoolTempSubscriber.key, 0, -1)
         d = yield from val.asdict()
-        return mean((float(v) for v in list(d)))
+        return mean((float(v) for v in list(d))) if d else 0.0
 
 
 class RedisPublisher(object):
