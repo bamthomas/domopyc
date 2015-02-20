@@ -1,13 +1,12 @@
 from datetime import datetime
-import functools
 from json import loads, dumps
 import unittest
 import asyncio
-import iso8601
 
+import functools
 import asyncio_redis
 from rfxcom.protocol.base import BasePacket
-from rfxcom_toolbox.emetteur_recepteur import RedisPublisher, RfxcomReader
+from rfxcom_toolbox.emetteur_recepteur import RedisPublisher, RfxcomReader, RfxcomPoolTempSubscriber
 
 
 def async_coro(f):
@@ -25,7 +24,8 @@ def async_coro(f):
 class WithRedis(unittest.TestCase):
     @async_coro
     def setUp(self):
-        self.connection = yield from asyncio_redis.Connection.create(host='localhost', port=6379)
+        self.connection = yield from asyncio_redis.Pool.create(host='localhost', port=6379, poolsize=4)
+        yield from self.connection.flushdb()
 
     def tearDown(self):
         self.connection.close()
@@ -49,43 +49,23 @@ class TestRfxcomReader(WithRedis):
         self.assertDictEqual(packet.data, loads(message.value))
 
 
-class RfxcomPoolTempSubscriber(object):
-    key = 'pool_temperature'
-    def __init__(self, redis_conn):
-        self.redis_conn = redis_conn
-        @asyncio.coroutine
-        def setup_redis():
-            self.subscriber = yield from self.redis_conn.start_subscribe()
-            yield from self.subscriber.subscribe([RedisPublisher.RFXCOM_KEY])
-        asyncio.get_event_loop().call_soon(setup_redis())
-
-    def start(self):
-        asyncio.async(self.message_loop())
-        return self
-
-    @asyncio.coroutine
-    def message_loop(self):
-        while True:
-            message_str = yield from self.subscriber.next_published()
-            message = loads(message_str.value)
-            message['date'] = iso8601.parse_date(message['date'])
-            yield from self.redis_conn.zadd(RfxcomPoolTempSubscriber.key, {str(message['temperature']): message['date'].timestamp()})
-
-    @asyncio.coroutine
-    def get_average(self):
-        val = yield from self.redis_conn.zrange(RfxcomPoolTempSubscriber.key, 0, -1)
-        d = yield from val.asdict()
-        return float(list(d)[0])
-
-
 class TestPoolSubscriber(WithRedis):
     @async_coro
-    def test_read_one_data(self):
+    def test_average_one_data(self):
         pool_temp = RfxcomPoolTempSubscriber(self.connection).start()
         yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime.now().isoformat(), 'temperature': 3.0}))
 
         value = yield from pool_temp.get_average()
         self.assertEqual(3.0, value)
+
+    @async_coro
+    def test_average_two_data(self):
+        pool_temp = RfxcomPoolTempSubscriber(self.connection).start()
+        yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 0).isoformat(), 'temperature': 3.0}))
+        yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 1).isoformat(), 'temperature': 5.0}))
+        yield from asyncio.sleep(1)
+        value = yield from pool_temp.get_average()
+        self.assertEqual(4.0, value)
 
 
 class RfxcomReaderForTest(RfxcomReader):
