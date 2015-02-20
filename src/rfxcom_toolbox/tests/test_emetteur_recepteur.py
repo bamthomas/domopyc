@@ -63,7 +63,7 @@ class TestPoolSubscriber(WithRedis):
         pool_temp = RfxcomPoolTempSubscriber(self.connection).start()
         yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 0).isoformat(), 'temperature': 3.0}))
         yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 1).isoformat(), 'temperature': 5.0}))
-        yield from asyncio.sleep(1)
+        yield from asyncio.sleep(1) # beurk, needs active asyncio.locks.Condition.wait_for condition or similar
         value = yield from pool_temp.get_average()
         self.assertEqual(4.0, value)
 
