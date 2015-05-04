@@ -1,4 +1,5 @@
 rfxcom
 asyncio_redis
+iso8601
 # tests
 nose
