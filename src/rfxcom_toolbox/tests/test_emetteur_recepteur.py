@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from json import loads, dumps
 import unittest
 import asyncio
@@ -6,6 +6,7 @@ import asyncio
 import functools
 import asyncio_redis
 from rfxcom.protocol.base import BasePacket
+from rfxcom_toolbox import emetteur_recepteur
 from rfxcom_toolbox.emetteur_recepteur import RedisPublisher, RfxcomReader, RfxcomPoolTempSubscriber
 
 
@@ -72,11 +73,24 @@ class TestPoolSubscriber(WithRedis):
         pool_temp = RfxcomPoolTempSubscriber(self.connection).start(2)
 
         yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 0).isoformat(), 'temperature': 3.0}))
-        yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 1).isoformat(), 'temperature': 5.0}))
+        yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 1).isoformat(), 'temperature': 4.0}))
         yield from asyncio.wait_for(pool_temp.message_loop_task, timeout=1)
 
         value = yield from pool_temp.get_average()
-        self.assertEqual(4.0, value)
+        self.assertEqual(3.5, value)
+
+    @async_coro
+    def test_capped_collection(self):
+        pool_temp = RfxcomPoolTempSubscriber(self.connection, 10).start(3)
+        emetteur_recepteur.now = lambda: datetime(2015, 2, 14, 15, 0, 10, tzinfo=timezone.utc)
+
+        yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 0).isoformat(), 'temperature': 2.0}))
+        yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 1).isoformat(), 'temperature': 4.0}))
+        yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 2).isoformat(), 'temperature': 6.0}))
+        yield from asyncio.wait_for(pool_temp.message_loop_task, timeout=1)
+
+        value = yield from pool_temp.get_average()
+        self.assertEqual(5.0, value)
 
 
 class RfxcomReaderForTest(RfxcomReader):

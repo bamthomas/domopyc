@@ -1,8 +1,10 @@
 from asyncio import get_event_loop
+from datetime import datetime
 import logging
 import asyncio
 from json import dumps, loads
 from statistics import mean
+from asyncio_redis.protocol import ZScoreBoundary
 
 import iso8601
 import asyncio_redis
@@ -19,12 +21,16 @@ root.setLevel(logging.INFO)
 logger = logging.getLogger('rfxcom')
 
 
+def now(): return datetime.now()
+
+
 class RfxcomPoolTempSubscriber(object):
     key = 'pool_temperature'
     infinite_loop = lambda i: True
     wait_value = lambda n: lambda i: i < n
 
-    def __init__(self, redis_conn):
+    def __init__(self, redis_conn, max_data_age_in_seconds=0):
+        self.max_data_age_in_seconds = max_data_age_in_seconds
         self.redis_conn = redis_conn
         self.subscriber = None
         self.message_loop_task = None
@@ -49,6 +55,9 @@ class RfxcomPoolTempSubscriber(object):
             message = loads(message_str.value)
             message['date'] = iso8601.parse_date(message['date'])
             yield from self.redis_conn.zadd(RfxcomPoolTempSubscriber.key, {str(message['temperature']): message['date'].timestamp()})
+            if self.max_data_age_in_seconds:
+                yield from self.redis_conn.zremrangebyscore(RfxcomPoolTempSubscriber.key, ZScoreBoundary('-inf'),
+                                                            ZScoreBoundary(now().timestamp() - self.max_data_age_in_seconds))
 
     @asyncio.coroutine
     def get_average(self):
