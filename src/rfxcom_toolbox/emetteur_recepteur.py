@@ -3,11 +3,12 @@ import logging
 import asyncio
 from json import dumps, loads
 from statistics import mean
+
 import iso8601
 import asyncio_redis
 from rfxcom import protocol
-
 from rfxcom.transport import AsyncioTransport
+
 
 dev_name = '/dev/serial/by-id/usb-RFXCOM_RFXtrx433_A1XZI13O-if00-port0'
 
@@ -20,9 +21,13 @@ logger = logging.getLogger('rfxcom')
 
 class RfxcomPoolTempSubscriber(object):
     key = 'pool_temperature'
+    infinite_loop = lambda i: True
+    wait_value = lambda n: lambda i: i < n
+
     def __init__(self, redis_conn):
         self.redis_conn = redis_conn
         self.subscriber = None
+        self.message_loop_task = None
         asyncio.new_event_loop().run_until_complete(self.setup_subscriber())
 
     @asyncio.coroutine
@@ -30,13 +35,16 @@ class RfxcomPoolTempSubscriber(object):
         self.subscriber = yield from self.redis_conn.start_subscribe()
         yield from self.subscriber.subscribe([RedisPublisher.RFXCOM_KEY])
 
-    def start(self):
-        asyncio.async(self.message_loop())
+    def start(self, for_n_messages=0):
+        predicate = RfxcomPoolTempSubscriber.infinite_loop if for_n_messages == 0 else RfxcomPoolTempSubscriber.wait_value(for_n_messages)
+        self.message_loop_task = asyncio.async(self.message_loop(predicate))
         return self
 
     @asyncio.coroutine
-    def message_loop(self):
-        while True:
+    def message_loop(self, predicate):
+        i = 0
+        while predicate(i):
+            i += 1
             message_str = yield from self.subscriber.next_published()
             message = loads(message_str.value)
             message['date'] = iso8601.parse_date(message['date'])
@@ -83,6 +91,7 @@ class RfxcomReader(object):
 
     def default_callback(self, packet):
         logger.info('packet <%s> not handled' % packet)
+
 
 if __name__ == '__main__':
     try:
