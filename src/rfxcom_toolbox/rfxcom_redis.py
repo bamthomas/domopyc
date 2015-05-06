@@ -21,23 +21,21 @@ logger = logging.getLogger('rfxcom')
 def now(): return datetime.now()
 
 
+@asyncio.coroutine
+def create_redis_pool():
+    connection = yield from asyncio_redis.Pool.create(host='localhost', port=6379, poolsize=4)
+    return connection
+
+
 class RedisPublisher(object):
     RFXCOM_KEY = "rfxcom"
 
-    def __init__(self, host='localhost', port=6379):
-        self.port = port
-        self.host = host
-        self.connection = None
-
-    @asyncio.coroutine
-    def redis_connect(self):
-        self.connection = yield from asyncio_redis.Connection.create(self.host, self.port)
+    def __init__(self, redis_conn):
+        self.redis_conn = redis_conn
 
     @asyncio.coroutine
     def publish(self, event):
-        if self.connection is None:
-            yield from asyncio.wait_for(self.redis_connect(), timeout=5.0)
-        yield from self.connection.publish(self.RFXCOM_KEY, dumps(event))
+        yield from self.redis_conn.publish(self.RFXCOM_KEY, dumps(event))
 
 
 class RedisTimeCappedSubscriber(object):

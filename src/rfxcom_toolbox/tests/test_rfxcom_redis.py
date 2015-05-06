@@ -4,10 +4,9 @@ import unittest
 import asyncio
 
 import functools
-import asyncio_redis
 from rfxcom.protocol.base import BasePacket
 from rfxcom_toolbox import rfxcom_redis
-from rfxcom_toolbox.rfxcom_redis import RedisPublisher, RfxcomReader, RedisTimeCappedSubscriber
+from rfxcom_toolbox.rfxcom_redis import RedisPublisher, RfxcomReader, RedisTimeCappedSubscriber, create_redis_pool
 
 
 def async_coro(f):
@@ -25,7 +24,7 @@ def async_coro(f):
 class WithRedis(unittest.TestCase):
     @async_coro
     def setUp(self):
-        self.connection = yield from asyncio_redis.Pool.create(host='localhost', port=6379, poolsize=4)
+        self.connection = yield from create_redis_pool()
         yield from self.connection.flushdb()
 
     def tearDown(self):
@@ -45,7 +44,7 @@ class TestRfxcomReader(WithRedis):
              'battery_signal_level': 128, 'signal_strength': 128, 'id': '0xBB02',
              'sub_type_name': 'THGN122/123, THGN132, THGR122/228/238/268'})
 
-        RfxcomReaderForTest(RedisPublisher()).handle_temp_humidity(packet)
+        RfxcomReaderForTest(RedisPublisher(self.connection)).handle_temp_humidity(packet)
 
         message = yield from asyncio.wait_for(self.subscriber.next_published(), 1)
         self.assertDictEqual(dict(packet.data, date=rfxcom_redis.now().isoformat()), loads(message.value))
