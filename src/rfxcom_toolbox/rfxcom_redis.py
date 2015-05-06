@@ -93,7 +93,7 @@ class RfxcomReader(object):
                                            '*': self.default_callback})
 
     def handle_temp_humidity(self, packet):
-        asyncio.async(self.publisher.publish(packet.data))
+        asyncio.async(self.publisher.publish(dict(packet.data, date=now().isoformat())))
 
     def default_callback(self, packet):
         logger.info('packet <%s> not handled' % packet)

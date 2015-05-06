@@ -35,6 +35,7 @@ class WithRedis(unittest.TestCase):
 class TestRfxcomReader(WithRedis):
     @async_coro
     def test_read_data(self):
+        rfxcom_redis.now = lambda: datetime(2015, 2, 14, 15, 0, 0, tzinfo=timezone.utc)
         self.subscriber = yield from self.connection.start_subscribe()
         yield from self.subscriber.subscribe([RedisPublisher.RFXCOM_KEY])
         packet = DummyPacket().load(
@@ -46,8 +47,8 @@ class TestRfxcomReader(WithRedis):
 
         RfxcomReaderForTest(RedisPublisher()).handle_temp_humidity(packet)
 
-        message = yield from self.subscriber.next_published()
-        self.assertDictEqual(packet.data, loads(message.value))
+        message = yield from asyncio.wait_for(self.subscriber.next_published(), 1)
+        self.assertDictEqual(dict(packet.data, date=rfxcom_redis.now().isoformat()), loads(message.value))
 
 
 class TestPoolSubscriber(WithRedis):
