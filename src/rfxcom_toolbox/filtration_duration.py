@@ -9,3 +9,9 @@ if __name__ == '__main__':
         get_event_loop().run_forever()
     finally:
         get_event_loop().close()
+
+
+def calculate_in_minutes(temperature):
+    if temperature < 8.0:
+        return 0
+    return temperature/2 * 60
