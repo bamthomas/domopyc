@@ -6,8 +6,8 @@ import asyncio
 import functools
 import asyncio_redis
 from rfxcom.protocol.base import BasePacket
-from rfxcom_toolbox import emetteur_recepteur
-from rfxcom_toolbox.emetteur_recepteur import RedisPublisher, RfxcomReader, RfxcomPoolTempSubscriber
+from rfxcom_toolbox import rfxcom_redis
+from rfxcom_toolbox.rfxcom_redis import RedisPublisher, RfxcomReader, RfxcomPoolTempSubscriber
 
 
 def async_coro(f):
@@ -82,7 +82,7 @@ class TestPoolSubscriber(WithRedis):
     @async_coro
     def test_capped_collection(self):
         pool_temp = RfxcomPoolTempSubscriber(self.connection, 10).start(3)
-        emetteur_recepteur.now = lambda: datetime(2015, 2, 14, 15, 0, 10, tzinfo=timezone.utc)
+        rfxcom_redis.now = lambda: datetime(2015, 2, 14, 15, 0, 10, tzinfo=timezone.utc)
 
         yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 0).isoformat(), 'temperature': 2.0}))
         yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 1).isoformat(), 'temperature': 4.0}))

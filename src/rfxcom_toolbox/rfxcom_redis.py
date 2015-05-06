@@ -1,18 +1,15 @@
-from asyncio import get_event_loop
 from datetime import datetime
 import logging
 import asyncio
 from json import dumps, loads
 from statistics import mean
-from asyncio_redis.protocol import ZScoreBoundary
 
+from asyncio_redis.protocol import ZScoreBoundary
 import iso8601
 import asyncio_redis
 from rfxcom import protocol
 from rfxcom.transport import AsyncioTransport
 
-
-dev_name = '/dev/serial/by-id/usb-RFXCOM_RFXtrx433_A1XZI13O-if00-port0'
 
 root = logging.getLogger()
 logging.basicConfig()
@@ -100,11 +97,3 @@ class RfxcomReader(object):
 
     def default_callback(self, packet):
         logger.info('packet <%s> not handled' % packet)
-
-
-if __name__ == '__main__':
-    try:
-        RfxcomReader(dev_name, RedisPublisher())
-        get_event_loop().run_forever()
-    finally:
-        get_event_loop().close()
