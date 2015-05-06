@@ -7,7 +7,7 @@ import functools
 import asyncio_redis
 from rfxcom.protocol.base import BasePacket
 from rfxcom_toolbox import rfxcom_redis
-from rfxcom_toolbox.rfxcom_redis import RedisPublisher, RfxcomReader, RfxcomPoolTempSubscriber
+from rfxcom_toolbox.rfxcom_redis import RedisPublisher, RfxcomReader, RedisTimeCappedSubscriber
 
 
 def async_coro(f):
@@ -54,14 +54,14 @@ class TestRfxcomReader(WithRedis):
 class TestPoolSubscriber(WithRedis):
     @async_coro
     def test_average_no_data(self):
-        pool_temp = RfxcomPoolTempSubscriber(self.connection).start()
+        pool_temp = RedisTimeCappedSubscriber(self.connection, 'pool_temperature').start()
 
         value = yield from pool_temp.get_average()
         self.assertEqual(0.0, value)
 
     @async_coro
     def test_average_one_data(self):
-        pool_temp = RfxcomPoolTempSubscriber(self.connection).start(1)
+        pool_temp = RedisTimeCappedSubscriber(self.connection, 'pool_temperature').start(1)
 
         yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime.now().isoformat(), 'temperature': 3.0}))
         yield from asyncio.wait_for(pool_temp.message_loop_task, timeout=1)
@@ -71,7 +71,7 @@ class TestPoolSubscriber(WithRedis):
 
     @async_coro
     def test_average_two_data(self):
-        pool_temp = RfxcomPoolTempSubscriber(self.connection).start(2)
+        pool_temp = RedisTimeCappedSubscriber(self.connection, 'pool_temperature').start(2)
 
         yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 0).isoformat(), 'temperature': 3.0}))
         yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 1).isoformat(), 'temperature': 4.0}))
@@ -82,7 +82,7 @@ class TestPoolSubscriber(WithRedis):
 
     @async_coro
     def test_capped_collection(self):
-        pool_temp = RfxcomPoolTempSubscriber(self.connection, 10).start(3)
+        pool_temp = RedisTimeCappedSubscriber(self.connection, 'pool_temperature', 10).start(3)
         rfxcom_redis.now = lambda: datetime(2015, 2, 14, 15, 0, 10, tzinfo=timezone.utc)
 
         yield from self.connection.publish(RedisPublisher.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 0).isoformat(), 'temperature': 2.0}))
