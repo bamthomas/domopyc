@@ -5,7 +5,7 @@ from json import dumps, loads
 from statistics import mean
 
 from asyncio_redis.protocol import ZScoreBoundary
-import iso8601
+from current_cost.iso8601_json import with_iso8601_date
 import asyncio_redis
 from rfxcom import protocol
 from rfxcom.transport import AsyncioTransport
@@ -68,8 +68,7 @@ class RedisTimeCappedSubscriber(object):
         while predicate(i):
             i += 1
             message_str = yield from self.subscriber.next_published()
-            message = loads(message_str.value)
-            message['date'] = iso8601.parse_date(message['date'])
+            message = loads(message_str.value, object_hook=with_iso8601_date)
             yield from self.redis_conn.zadd(self.indicator_name, {str(message[self.indicator_key]): message['date'].timestamp()})
             if self.max_data_age_in_seconds:
                 yield from self.redis_conn.zremrangebyscore(self.indicator_name, ZScoreBoundary('-inf'),

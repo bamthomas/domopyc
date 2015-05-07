@@ -5,9 +5,9 @@ import unittest
 from datetime import datetime, timezone
 
 import asyncio_redis
-from current_cost.iso8601_json import Iso8601DateEncoder
+from current_cost.iso8601_json import Iso8601DateEncoder, with_iso8601_date
 import functools
-import iso8601
+
 
 __author__ = 'bruno'
 
@@ -70,8 +70,7 @@ class AsyncRedisSubscriber(object):
         while predicate(i):
             i += 1
             message_str = yield from self.subscriber.next_published()
-            message = loads(message_str.value)
-            message['date'] = iso8601.parse_date(message['date'])
+            message = loads(message_str.value, object_hook=with_iso8601_date)
             yield from self.message_handler.handle(message)
 
 

@@ -1,13 +1,15 @@
 # coding=utf-8
 from datetime import datetime, timedelta
-from functools import reduce
 from json import loads, dumps
 import logging
 import threading
 import xml.etree.cElementTree as ET
-import iso8601
+
+from current_cost.iso8601_json import with_iso8601_date, Iso8601DateEncoder
+from functools import reduce
 import serial
 import redis
+
 
 CURRENT_COST = 'current_cost'
 REDIS = redis.Redis()
@@ -75,10 +77,10 @@ class AverageMessageHandler(object):
         return dt - timedelta(minutes=dt.minute % minutes - minutes, seconds=dt.second, microseconds=dt.microsecond)
 
     def handle(self, json_message):
-        message = loads(json_message)
+        message = loads(json_message, object_hook=with_iso8601_date)
         self.messages.append(message)
         if now() >= self.next_save_date:
-            self.save(iso8601.parse_date(message['date']), self.get_average_json_message(message['date']))
+            self.save(self.get_average_json_message(message['date']))
             self.next_save_date = self.next_save_date + self.delta_minutes
             self.messages = []
 
@@ -95,7 +97,7 @@ class AverageMessageHandler(object):
         return {'date': date, 'watt': watt_sum / nb_messages, 'temperature': temp_sum / nb_messages,
                 'nb_data': nb_messages, 'minutes': int(self.delta_minutes.total_seconds() / 60)}
 
-    def save(self, message_date, average_message):
+    def save(self, average_message):
         raise NotImplementedError
 
 
@@ -104,9 +106,9 @@ class RedisAverageMessageHandler(AverageMessageHandler):
         super(RedisAverageMessageHandler, self).__init__(average_period_minutes)
         self.redis = db
 
-    def save(self, message_date, average_message):
-        key = 'current_cost_%s' % message_date.strftime('%Y-%m-%d')
-        if self.redis.lpush(key, dumps(average_message)) == 1:
+    def save(self, average_message):
+        key = 'current_cost_%s' % average_message['date'].strftime('%Y-%m-%d')
+        if self.redis.lpush(key, dumps(average_message, cls=Iso8601DateEncoder)) == 1:
             self.redis.expire(key, 5 * 24 * 3600)
 
 
@@ -128,11 +130,11 @@ class MysqlAverageMessageHandler(AverageMessageHandler):
         cursor.execute(MysqlAverageMessageHandler.CREATE_TABLE_SQL)
         cursor.close()
 
-    def save(self, message_date, average_message):
+    def save(self, average_message):
         cursor = self.db.cursor()
         cursor.execute(
             "INSERT INTO current_cost (timestamp, watt, minutes, nb_data, temperature) values ('%s', %s, %s, %s, %s) " % (
-                message_date, average_message['watt'], average_message['minutes'], average_message['nb_data'],
+                average_message['date'], average_message['watt'], average_message['minutes'], average_message['nb_data'],
                 average_message['temperature']))
         cursor.close()
 
