@@ -151,3 +151,4 @@ if __name__ == '__main__':
         current_cost.join()
     finally:
         serial_drv.close()
+
