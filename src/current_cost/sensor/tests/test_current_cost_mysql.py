@@ -1,6 +1,7 @@
 from datetime import datetime
 from json import dumps
 import unittest
+from current_cost.iso8601_json import Iso8601DateEncoder
 import pymysql
 from current_cost.sensor import current_cost
 
@@ -35,15 +36,15 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
 
     def test_average(self):
         message_handler = current_cost.MysqlAverageMessageHandler(self.db, average_period_minutes=10)
-        message_handler.handle(dumps({'date': '2012-12-13T14:00:07', 'watt': 100, 'temperature': 20.0}))
+        message_handler.handle(dumps({'date': current_cost.now(), 'watt': 100, 'temperature': 20.0}, cls=Iso8601DateEncoder))
         self.assertEquals(0, self.nb_table_rows('current_cost'))
 
         current_cost.now = lambda: datetime(2012, 12, 13, 14, 3, 0)
-        message_handler.handle(dumps({'date': '2012-12-13T14:03:07', 'watt': 200, 'temperature': 30.0}))
+        message_handler.handle(dumps({'date': current_cost.now(), 'watt': 200, 'temperature': 30.0}, cls=Iso8601DateEncoder))
         self.assertEquals(0, self.nb_table_rows('current_cost'))
 
         current_cost.now = lambda: datetime(2012, 12, 13, 14, 10, 0, 1)
-        message_handler.handle(dumps({'date': '2012-12-13T14:10:07', 'watt': 900, 'temperature': 10.0}))
+        message_handler.handle(dumps({'date': current_cost.now(), 'watt': 900, 'temperature': 10.0}, cls=Iso8601DateEncoder))
 
         self.assertEquals(1, self.nb_table_rows('current_cost'))
         cursor = self.db.cursor()

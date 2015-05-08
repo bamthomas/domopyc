@@ -1,7 +1,8 @@
 from json import dumps, loads
 from queue import Queue, Empty
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
+from current_cost.iso8601_json import Iso8601DateEncoder, with_iso8601_date
 
 import redis
 from current_cost.sensor import current_cost
@@ -81,12 +82,13 @@ class AverageMessageHandlerTestWithoutAverage(unittest.TestCase):
         self.myredis.delete('current_cost_2012-12-13')
 
     def test_save_event_redis_function(self):
-        self.message_handler.handle(dumps({'date': '2012-12-13T21:59:10', 'watt': 305, 'temperature':21.4}))
+        now = datetime(2012, 12, 13, 14, 0, 7, tzinfo=timezone.utc)
+        self.message_handler.handle(dumps({'date': now, 'watt': 305.0, 'temperature':21.4}, cls=Iso8601DateEncoder))
 
         self.assertTrue(int(self.myredis.ttl('current_cost_2012-12-13')) <=  5 * 24 * 3600)
         self.assertDictEqual(
-            {'date': '2012-12-13T21:59:10', 'watt': 305, 'temperature': 21.4, 'nb_data': 1, 'minutes': 0},
-            loads(self.myredis.lpop('current_cost_2012-12-13').decode()))
+            {'date': now, 'watt': 305, 'temperature': 21.4, 'nb_data': 1, 'minutes': 0},
+            loads(self.myredis.lpop('current_cost_2012-12-13').decode(), object_hook=with_iso8601_date))
 
     def test_save_event_redis_function_no_ttl_if_not_first_element(self):
         self.myredis.lpush('current_cost_2012-12-13', 'not used')
@@ -97,7 +99,7 @@ class AverageMessageHandlerTestWithoutAverage(unittest.TestCase):
 
 class AverageMessageHandlerTest(unittest.TestCase):
     def setUp(self):
-        current_cost.now = lambda: datetime(2012, 12, 13, 14, 2, 0)
+        current_cost.now = lambda: datetime(2012, 12, 13, 14, 2, 0, tzinfo=timezone.utc)
         self.myredis = redis.Redis()
         self.message_handler = current_cost.RedisAverageMessageHandler(self.myredis, average_period_minutes=10)
 
@@ -111,15 +113,16 @@ class AverageMessageHandlerTest(unittest.TestCase):
         self.assertEquals(datetime(2012, 12, 13, 14, 5 ), self.message_handler.next_plain(5 , _14h04))
 
     def test_average(self):
-        self.message_handler.handle(dumps({'date': '2012-12-13T14:00:07', 'watt': 100, 'temperature':20.0}))
+        current_cost.now = lambda: datetime(2012, 12, 13, 14, 0, 7, tzinfo=timezone.utc)
+        self.message_handler.handle(dumps({'date': current_cost.now(), 'watt': 100, 'temperature':20.0}, cls=Iso8601DateEncoder))
         self.assertEquals(0, self.myredis.llen('current_cost_2012-12-13'))
 
-        current_cost.now = lambda: datetime(2012, 12, 13, 14, 3, 0)
-        self.message_handler.handle(dumps({'date': '2012-12-13T14:03:07', 'watt': 200, 'temperature':30.0}))
+        current_cost.now = lambda: datetime(2012, 12, 13, 14, 3, 0, tzinfo=timezone.utc)
+        self.message_handler.handle(dumps({'date': current_cost.now(), 'watt': 200, 'temperature':30.0}, cls=Iso8601DateEncoder))
         self.assertEquals(0, self.myredis.llen('current_cost_2012-12-13'))
 
-        current_cost.now = lambda: datetime(2012, 12, 13, 14, 10, 0, 1)
-        self.message_handler.handle(dumps({'date': '2012-12-13T14:10:07', 'watt': 900, 'temperature':10.0}))
+        current_cost.now = lambda: datetime(2012, 12, 13, 14, 10, 0, 1, tzinfo=timezone.utc)
+        self.message_handler.handle(dumps({'date': current_cost.now(), 'watt': 900, 'temperature':10.0}, cls=Iso8601DateEncoder))
 
-        self.assertEqual({'date': '2012-12-13T14:10:07', 'watt': 400, 'temperature':20.0, 'nb_data': 3, 'minutes': 10},
-            loads(self.myredis.lpop('current_cost_2012-12-13').decode()))
+        self.assertEqual({'date': current_cost.now(), 'watt': 400.0, 'temperature':20.0, 'nb_data': 3, 'minutes': 10},
+            loads(self.myredis.lpop('current_cost_2012-12-13').decode(), object_hook=with_iso8601_date))
