@@ -73,30 +73,6 @@ class CurrentCostReaderTest(unittest.TestCase):
         self.assertDictEqual(self.queue.get(timeout=1), {'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':21.4})
 
 
-class AverageMessageHandlerTestWithoutAverage(unittest.TestCase):
-    def setUp(self):
-        self.myredis = redis.Redis()
-        self.message_handler = current_cost.RedisAverageMessageHandler(self.myredis)
-
-    def tearDown(self):
-        self.myredis.delete('current_cost_2012-12-13')
-
-    def test_save_event_redis_function(self):
-        now = datetime(2012, 12, 13, 14, 0, 7, tzinfo=timezone.utc)
-        self.message_handler.handle(dumps({'date': now, 'watt': 305.0, 'temperature':21.4}, cls=Iso8601DateEncoder))
-
-        self.assertTrue(int(self.myredis.ttl('current_cost_2012-12-13')) <=  5 * 24 * 3600)
-        self.assertDictEqual(
-            {'date': now, 'watt': 305, 'temperature': 21.4, 'nb_data': 1, 'minutes': 0},
-            loads(self.myredis.lpop('current_cost_2012-12-13').decode(), object_hook=with_iso8601_date))
-
-    def test_save_event_redis_function_no_ttl_if_not_first_element(self):
-        self.myredis.lpush('current_cost_2012-12-13', 'not used')
-        self.message_handler.handle(dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':21.4}))
-
-        self.assertIsNone(self.myredis.ttl('current_cost_2012-12-13'))
-
-
 class AverageMessageHandlerTest(unittest.TestCase):
     def setUp(self):
         current_cost.now = lambda: datetime(2012, 12, 13, 14, 2, 0, tzinfo=timezone.utc)
@@ -105,6 +81,24 @@ class AverageMessageHandlerTest(unittest.TestCase):
 
     def tearDown(self):
         self.myredis.delete('current_cost_2012-12-13')
+
+    def test_save_event_redis_function(self):
+        message_handler_without_period = current_cost.RedisAverageMessageHandler(self.myredis)
+        now = datetime(2012, 12, 13, 14, 0, 7, tzinfo=timezone.utc)
+
+        message_handler_without_period.handle(dumps({'date': now, 'watt': 305.0, 'temperature':21.4}, cls=Iso8601DateEncoder))
+
+        self.assertTrue(int(self.myredis.ttl('current_cost_2012-12-13')) <=  5 * 24 * 3600)
+        self.assertDictEqual(
+            {'date': now, 'watt': 305, 'temperature': 21.4, 'nb_data': 1, 'minutes': 0},
+            loads(self.myredis.lpop('current_cost_2012-12-13').decode(), object_hook=with_iso8601_date))
+
+    def test_save_event_redis_function_no_ttl_if_not_first_element(self):
+        message_handler_without_period = current_cost.RedisAverageMessageHandler(self.myredis)
+        self.myredis.lpush('current_cost_2012-12-13', 'not used')
+        message_handler_without_period.handle(dumps({'date': (current_cost.now().isoformat()), 'watt': 305, 'temperature':21.4}))
+
+        self.assertIsNone(self.myredis.ttl('current_cost_2012-12-13'))
 
     def test_next_plain(self):
         _14h04 = datetime(2012, 12, 13, 14, 4, 0)
