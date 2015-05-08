@@ -50,7 +50,7 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
         cursor = self.db.cursor()
         cursor.execute("select timestamp, watt, minutes, nb_data, temperature from current_cost")
         rows = cursor.fetchall()
-        self.assertEqual((datetime(2012, 12, 13, 14, 10, 7), 400, 10, 3, 20.0), rows[0])
+        self.assertEqual((datetime(2012, 12, 13, 14, 10, 0), 400, 10, 3, 20.0), rows[0])
         cursor.close()
 
     def nb_table_rows(self, table):
