@@ -1,12 +1,12 @@
 from asyncio import Queue
 import asyncio
+import functools
 from json import dumps, loads
 import unittest
 from datetime import datetime, timezone
 
 import asyncio_redis
 from current_cost.iso8601_json import Iso8601DateEncoder, with_iso8601_date
-import functools
 
 
 __author__ = 'bruno'
@@ -95,3 +95,4 @@ class RedisSubscribeLoopTest(WithRedis):
 
         event = yield from asyncio.wait_for(self.message_handler.queue.get(), 2)
         self.assertDictEqual(event, expected)
+
