@@ -1,16 +1,22 @@
 from asyncio import Queue
 import asyncio
-import functools
+import logging
 from json import dumps, loads
 import unittest
 from datetime import datetime, timezone
+import xml.etree.cElementTree as ET
 
+import functools
 import asyncio_redis
 from current_cost.iso8601_json import Iso8601DateEncoder, with_iso8601_date
 
 
+logging.basicConfig(format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
+LOGGER = logging.getLogger('current_cost')
+
 __author__ = 'bruno'
 
+DEVICE = '/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller-if00-port0'
 
 
 @asyncio.coroutine
@@ -27,7 +33,9 @@ def async_coro(f):
             future = coro(*args, **kwargs)
             loop = asyncio.get_event_loop()
             loop.run_until_complete(future)
+
         return wrapper
+
     return wrap(f)
 
 
@@ -60,7 +68,8 @@ class AsyncRedisSubscriber(object):
         yield from self.subscriber.subscribe([self.pubsub_key])
 
     def start(self, for_n_messages=0):
-        predicate = AsyncRedisSubscriber.infinite_loop if for_n_messages == 0 else AsyncRedisSubscriber.wait_value(for_n_messages)
+        predicate = AsyncRedisSubscriber.infinite_loop if for_n_messages == 0 else AsyncRedisSubscriber.wait_value(
+            for_n_messages)
         self.message_loop_task = asyncio.async(self.message_loop(predicate))
         return self
 
@@ -74,15 +83,55 @@ class AsyncRedisSubscriber(object):
             yield from self.message_handler.handle(message)
 
 
+def now():
+    return datetime.now()
+
+
+class AsyncCurrentCostReader(object):
+    def __init__(self, serial_drv, publisher, event_loop=asyncio.get_event_loop()):
+        self.stop_asked = False
+        self.event_loop = event_loop
+        self.publisher = publisher
+        self.serial_drv = serial_drv
+        self.create_transport()
+
+    def create_transport(self):
+        self.event_loop.add_reader(self.serial_drv, self.read)
+
+    def start(self):
+        self.read()
+
+    @asyncio.coroutine
+    def read(self):
+        while not self.stop_asked:
+            line = self.serial_drv.readline()
+            if line:
+                try:
+                    xml_data = ET.fromstring(line)
+                    power_element = xml_data.find('ch1/watts')
+                    if power_element is not None:
+                        power = int(power_element.text)
+                        self.publisher.handle({'date': now().isoformat(), 'watt': power,
+                                      'temperature': float(xml_data.find('tmpr').text)})
+                except ET.ParseError as xml_parse_error:
+                    LOGGER.exception(xml_parse_error)
+
+    def stop(self):
+        self.stop_asked = True
+
+
 class RedisSubscribeLoopTest(WithRedis):
     @async_coro
     def setUp(self):
         yield from super().setUp()
+
         class TestMessageHandler(object):
             queue = Queue()
+
             @asyncio.coroutine
             def handle(self, message):
                 yield from self.queue.put(message)
+
         self.message_handler = TestMessageHandler()
         self.subscriber = AsyncRedisSubscriber(self.connection, self.message_handler, 'key')
 
@@ -96,3 +145,58 @@ class RedisSubscribeLoopTest(WithRedis):
         event = yield from asyncio.wait_for(self.message_handler.queue.get(), 2)
         self.assertDictEqual(event, expected)
 
+
+class MockSerial():
+    def __init__(self):
+        self.readqueue = Queue()
+
+    @asyncio.coroutine
+    def readline(self, *args, **kwargs):
+        try:
+            event = yield from self.readqueue.get(block=0)
+            return event
+        except asyncio.queues.QueueEmpty:
+            return None
+
+    @asyncio.coroutine
+    def send(self, message):
+        yield from self.readqueue.put(message)
+
+    def close(self):
+        pass
+
+
+class CurrentCostReaderTest(unittest.TestCase):
+    def setUp(self):
+        now = lambda: datetime(2012, 12, 13, 14, 15, 16)
+        self.queue = Queue()
+
+        class TestPublisher(object):
+            @asyncio.coroutine
+            def handle(self, event):
+                yield from self.queue.put(event)
+        class AsyncCurrentCostReaderWithoutFileDescriptor(AsyncCurrentCostReader):
+            def create_transport(self):
+                pass
+
+        self.mockserial = MockSerial()
+        self.current_cost_reader = AsyncCurrentCostReaderWithoutFileDescriptor(self.mockserial, TestPublisher())
+        self.current_cost_reader.start()
+
+    def tearDown(self):
+        self.current_cost_reader.stop()
+
+    def test_read_sensor(self):
+        self.mockserial.send(
+            '<msg><src>CC128-v1.29</src><dsb>00302</dsb><time>02:57:28</time><tmpr>21.4</tmpr><sensor>1</sensor><id>00126</id><type>1</type><ch1><watts>00305</watts></ch1></msg>')
+
+        event = yield from self.queue.get()
+        self.assertDictEqual(event, {'date': (now().isoformat()), 'watt': 305, 'temperature': 21.4})
+
+    def test_read_sensor_xml_error_dont_break_loop(self):
+        self.mockserial.send('<malformed XML>')
+        self.mockserial.send(
+            '<msg><src>CC128-v1.29</src><dsb>00302</dsb><time>02:57:28</time><tmpr>21.4</tmpr><sensor>1</sensor><id>00126</id><type>1</type><ch1><watts>00305</watts></ch1></msg>')
+
+        event = yield from self.queue.get()
+        self.assertDictEqual(event, {'date': (now().isoformat()), 'watt': 305, 'temperature': 21.4})
