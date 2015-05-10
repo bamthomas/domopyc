@@ -71,7 +71,6 @@ class AsyncCurrentCostReader(FileLike):
 
     def read_callback(self):
         line = self.readline()
-        print(line)
         if line:
             try:
                 xml_data = ET.fromstring(line)
@@ -86,6 +85,8 @@ class AsyncCurrentCostReader(FileLike):
     def read(self, bytes=1):
         return self.serial_drv.read(bytes)
 
+    def remove_reader(self):
+        self.event_loop.remove_reader(self.serial_drv.fd)
 
 if __name__ == '__main__':
     serial_drv = serial.Serial(DEVICE, baudrate=57600,

@@ -62,26 +62,6 @@ class RedisSubscribeLoopTest(WithRedis):
         self.assertDictEqual(event, expected)
 
 
-class MockSerial():
-    def __init__(self):
-        self.readqueue = Queue()
-
-    @asyncio.coroutine
-    def readline(self, *args, **kwargs):
-        try:
-            event = yield from self.readqueue.get(block=0)
-            return event
-        except asyncio.queues.QueueEmpty:
-            return None
-
-    @asyncio.coroutine
-    def send(self, message):
-        yield from self.readqueue.put(message)
-
-    def close(self):
-        pass
-
-
 class DummySerial():
     def __init__(self):
         self.rsock, self.wsock = socketpair()
@@ -106,6 +86,7 @@ class CurrentCostReaderTest(unittest.TestCase):
         self.current_cost_reader = AsyncCurrentCostReader(self.serial_device, self.handler)
 
     def tearDown(self):
+        self.current_cost_reader.remove_reader()
         self.serial_device.close()
 
     @async_coro
@@ -116,11 +97,11 @@ class CurrentCostReaderTest(unittest.TestCase):
         event = yield from asyncio.wait_for(self.handler.queue.get(), 1)
         self.assertDictEqual(event, {'date': (current_cost_async.now().isoformat()), 'watt': 305, 'temperature': 21.4})
 
-    # @async_coro
-    # def test_read_sensor_xml_error_dont_break_loop(self):
-    #     self.serial_device.write('<malformed XML>\n'.encode())
-    #     self.serial_device.write(
-    #         '<msg><src>CC128-v1.29</src><dsb>00302</dsb><time>02:57:28</time><tmpr>21.4</tmpr><sensor>1</sensor><id>00126</id><type>1</type><ch1><watts>00305</watts></ch1></msg>\n'.encode())
-    #
-    #     event = yield from asyncio.wait_for(self.handler.queue.get(), 1)
-    #     self.assertDictEqual(event, {'date': (current_cost_async.now().isoformat()), 'watt': 305, 'temperature': 21.4})
+    @async_coro
+    def test_read_sensor_xml_error_dont_break_loop(self):
+        self.serial_device.write('<malformed XML>\n'.encode())
+        self.serial_device.write(
+            '<msg><src>CC128-v1.29</src><dsb>00302</dsb><time>02:57:28</time><tmpr>21.4</tmpr><sensor>1</sensor><id>00126</id><type>1</type><ch1><watts>00305</watts></ch1></msg>\n'.encode())
+
+        event = yield from asyncio.wait_for(self.handler.queue.get(), 1)
+        self.assertDictEqual(event, {'date': (current_cost_async.now().isoformat()), 'watt': 305, 'temperature': 21.4})
