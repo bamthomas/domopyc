@@ -1,13 +1,14 @@
 # coding=utf-8
-from datetime import datetime
-from json import loads
+from datetime import datetime, timedelta
+from functools import reduce
+from json import loads, dumps
 import logging
 import asyncio
 import xml.etree.cElementTree as ET
 
 import serial
 import asyncio_redis
-from current_cost.iso8601_json import with_iso8601_date
+from current_cost.iso8601_json import with_iso8601_date, Iso8601DateEncoder
 from serial import FileLike
 
 
@@ -88,13 +89,63 @@ class AsyncCurrentCostReader(FileLike):
     def remove_reader(self):
         self.event_loop.remove_reader(self.serial_drv.fd)
 
+
+class AverageMessageHandler(object):
+    def __init__(self, average_period_minutes=0):
+        self.delta_minutes = timedelta(minutes=average_period_minutes)
+        self.next_save_date = average_period_minutes == 0 and now() or self.next_plain(average_period_minutes, now())
+        self.messages = []
+
+    @staticmethod
+    def next_plain(minutes, dt):
+        return dt - timedelta(minutes=dt.minute % minutes - minutes, seconds=dt.second, microseconds=dt.microsecond)
+
+    def handle(self, json_message):
+        message = loads(json_message, object_hook=with_iso8601_date)
+        self.messages.append(message)
+        if now() >= self.next_save_date:
+            average_json_message = self.get_average_json_message(message['date'])
+            self.next_save_date = self.next_save_date + self.delta_minutes
+            self.messages = []
+            return asyncio.async(self.save(average_json_message))
+
+    def get_average_json_message(self, date):
+        watt_and_temp = map(lambda msg: (msg['watt'], msg['temperature']), self.messages)
+
+        def add_tuple(x_t, y_v):
+            x, t = x_t
+            y, v = y_v
+            return x + y, t + v
+
+        watt_sum, temp_sum = reduce(add_tuple, watt_and_temp)
+        nb_messages = len(self.messages)
+        return {'date': date, 'watt': watt_sum / nb_messages, 'temperature': temp_sum / nb_messages,
+                'nb_data': nb_messages, 'minutes': int(self.delta_minutes.total_seconds() / 60)}
+
+    @asyncio.coroutine
+    def save(self, average_message):
+        raise NotImplementedError
+
+
+class RedisAverageMessageHandler(AverageMessageHandler):
+    def __init__(self, db, average_period_minutes=0):
+        super(RedisAverageMessageHandler, self).__init__(average_period_minutes)
+        self.redis_conn = db
+
+    @asyncio.coroutine
+    def save(self, average_message):
+        key = 'current_cost_%s' % average_message['date'].strftime('%Y-%m-%d')
+        lpush_return = yield from self.redis_conn.lpush(key, [dumps(average_message, cls=Iso8601DateEncoder)])
+        if lpush_return == 1:
+            yield from self.redis_conn.expire(key, 5 * 24 * 3600)
+
+
 if __name__ == '__main__':
     serial_drv = serial.Serial(DEVICE, baudrate=57600,
                           bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,
                           timeout=10)
 
     class LoggingPublisher(object):
-            @asyncio.coroutine
             def handle(self, event):
                 LOGGER.info(event)
     reader = AsyncCurrentCostReader(serial_drv, LoggingPublisher())
