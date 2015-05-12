@@ -140,6 +140,42 @@ class RedisAverageMessageHandler(AverageMessageHandler):
             yield from self.redis_conn.expire(key, 5 * 24 * 3600)
 
 
+class MysqlAverageMessageHandler(AverageMessageHandler):
+    CREATE_TABLE_SQL = '''CREATE TABLE IF NOT EXISTS `current_cost` (
+                            `id` mediumint(9) NOT NULL AUTO_INCREMENT,
+                            `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                            `watt` int(11) DEFAULT NULL,
+                            `minutes` int(11) DEFAULT NULL,
+                            `nb_data` int(11) DEFAULT NULL,
+                            `temperature` float DEFAULT NULL,
+                            PRIMARY KEY (`id`)
+                            ) ENGINE=MyISAM DEFAULT CHARSET=utf8'''
+
+    def __init__(self, db, average_period_minutes=0, loop=asyncio.get_event_loop()):
+        super(MysqlAverageMessageHandler, self).__init__(average_period_minutes)
+        self.db = db
+        self.loop = loop
+        asyncio.async(self.setup_db())
+
+    @asyncio.coroutine
+    def setup_db(self):
+        with (yield from self.db) as conn:
+            cur = yield from conn.cursor()
+            yield from cur.execute(MysqlAverageMessageHandler.CREATE_TABLE_SQL)
+            yield from cur.fetchone()
+            yield from cur.close()
+
+    @asyncio.coroutine
+    def save(self, average_message):
+        with (yield from self.db) as conn:
+            cursor = yield from conn.cursor()
+            yield from cursor.execute(
+                'INSERT INTO current_cost (timestamp, watt, minutes, nb_data, temperature) values (\'%s\', %s, %s, %s, %s) ' % (
+                    average_message['date'].strftime('%Y-%m-%d %H:%M:%S'), average_message['watt'], average_message['minutes'], average_message['nb_data'],
+                    average_message['temperature']))
+            yield from cursor.close()
+
+
 if __name__ == '__main__':
     serial_drv = serial.Serial(DEVICE, baudrate=57600,
                           bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,
