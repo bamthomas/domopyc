@@ -5,7 +5,7 @@ from json import dumps, loads
 from statistics import mean
 
 from asyncio_redis.protocol import ZScoreBoundary
-from current_cost.iso8601_json import with_iso8601_date
+from iso8601_json import with_iso8601_date
 import asyncio_redis
 from rfxcom import protocol
 from rfxcom.transport import AsyncioTransport

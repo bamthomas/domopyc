@@ -8,7 +8,7 @@ import xml.etree.cElementTree as ET
 
 import serial
 import asyncio_redis
-from current_cost.iso8601_json import with_iso8601_date, Iso8601DateEncoder
+from iso8601_json import with_iso8601_date, Iso8601DateEncoder
 from serial import FileLike
 
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 from json import loads
-from current_cost.sensor.current_cost import RedisSubscriber
+from current_cost_python27.sensor.current_cost import RedisSubscriber
 import flask
 from flask.templating import render_template
 import redis

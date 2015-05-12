@@ -2,7 +2,7 @@ from json import dumps
 import unittest
 from datetime import datetime
 
-from current_cost.batches.export_csv import ExportBatch
+from current_cost_python27.batches.export_csv import ExportBatch
 from os.path import join
 import redis
 

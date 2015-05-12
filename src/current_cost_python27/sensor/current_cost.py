@@ -5,7 +5,7 @@ import logging
 import threading
 import xml.etree.cElementTree as ET
 
-from current_cost.iso8601_json import with_iso8601_date, Iso8601DateEncoder
+from iso8601_json import with_iso8601_date, Iso8601DateEncoder
 from functools import reduce
 import serial
 import redis

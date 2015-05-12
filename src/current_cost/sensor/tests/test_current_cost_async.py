@@ -9,7 +9,7 @@ from current_cost.sensor import current_cost_async
 from current_cost.sensor.current_cost_async import AsyncRedisSubscriber, AsyncCurrentCostReader, AverageMessageHandler, \
     RedisAverageMessageHandler
 import functools
-from current_cost.iso8601_json import Iso8601DateEncoder, with_iso8601_date
+from iso8601_json import Iso8601DateEncoder, with_iso8601_date
 from rfxcom_toolbox.rfxcom_redis import create_redis_pool
 
 

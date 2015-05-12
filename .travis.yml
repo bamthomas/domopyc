@@ -7,6 +7,5 @@ before_install:
   - mysql -e "create database IF NOT EXISTS test;" -uroot
   - mysql -e "grant all on test.* to 'test' identified by 'test';" -uroot
 install: 
-- "pip install -r src/current_cost/requirements.txt"
-- "pip install -r src/rfxcom_toolbox/requirements.txt"
+- "pip install -r src/requirements.txt"
 script: nosetests
