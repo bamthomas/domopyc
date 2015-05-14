@@ -1,5 +1,9 @@
 # coding=utf-8
 from datetime import datetime, timedelta
+from statistics import mean
+from asyncio_redis import ZScoreBoundary
+import asyncio_redis
+from daq import rfxcom_emiter_receiver
 from daq.current_cost_sensor import AsyncCurrentCostReader, DEVICE
 from functools import reduce
 from json import loads, dumps
@@ -20,6 +24,12 @@ LOGGER = logging.getLogger('current_cost')
 def now(): return datetime.now()
 
 
+@asyncio.coroutine
+def create_redis_pool():
+    connection = yield from asyncio_redis.Pool.create(host='localhost', port=6379, poolsize=4)
+    return connection
+
+
 class AsyncRedisSubscriber(object):
     infinite_loop = lambda i: True
     wait_value = lambda n: lambda i: i < n
@@ -30,7 +40,7 @@ class AsyncRedisSubscriber(object):
         self.redis_conn = redis_conn
         self.subscriber = None
         self.message_loop_task = None
-        asyncio.async(self.setup_subscriber())
+        asyncio.new_event_loop().run_until_complete(self.setup_subscriber())
 
     @asyncio.coroutine
     def setup_subscriber(self):
@@ -38,8 +48,7 @@ class AsyncRedisSubscriber(object):
         yield from self.subscriber.subscribe([self.pubsub_key])
 
     def start(self, for_n_messages=0):
-        predicate = AsyncRedisSubscriber.infinite_loop if for_n_messages == 0 else AsyncRedisSubscriber.wait_value(
-            for_n_messages)
+        predicate = AsyncRedisSubscriber.infinite_loop if for_n_messages == 0 else AsyncRedisSubscriber.wait_value(for_n_messages)
         self.message_loop_task = asyncio.async(self.message_loop(predicate))
         return self
 
@@ -103,41 +112,27 @@ class RedisAverageMessageHandler(AverageMessageHandler):
             yield from self.redis_conn.expire(key, 5 * 24 * 3600)
 
 
-class MysqlAverageMessageHandler(AverageMessageHandler):
-    CREATE_TABLE_SQL = '''CREATE TABLE IF NOT EXISTS `current_cost` (
-                            `id` mediumint(9) NOT NULL AUTO_INCREMENT,
-                            `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                            `watt` int(11) DEFAULT NULL,
-                            `minutes` int(11) DEFAULT NULL,
-                            `nb_data` int(11) DEFAULT NULL,
-                            `temperature` float DEFAULT NULL,
-                            PRIMARY KEY (`id`)
-                            ) ENGINE=MyISAM DEFAULT CHARSET=utf8'''
-
-    def __init__(self, db, average_period_minutes=0, loop=asyncio.get_event_loop()):
-        super(MysqlAverageMessageHandler, self).__init__(average_period_minutes)
-        self.db = db
-        self.loop = loop
-        asyncio.async(self.setup_db())
+class RedisTimeCappedSubscriber(AsyncRedisSubscriber):
+    def __init__(self, redis_conn, indicator_name, max_data_age_in_seconds=0, pubsub_key=rfxcom_emiter_receiver.RFXCOM_KEY,
+                 indicator_key='temperature'):
+        super().__init__(redis_conn, self, pubsub_key)
+        self.indicator_key = indicator_key
+        self.max_data_age_in_seconds = max_data_age_in_seconds
+        self.indicator_name = indicator_name
 
     @asyncio.coroutine
-    def setup_db(self):
-        with (yield from self.db) as conn:
-            cur = yield from conn.cursor()
-            yield from cur.execute(MysqlAverageMessageHandler.CREATE_TABLE_SQL)
-            yield from cur.fetchone()
-            yield from cur.close()
+    def handle(self, message):
+        yield from self.redis_conn.zadd(self.indicator_name, {str(message[self.indicator_key]): message['date'].timestamp()})
+        if self.max_data_age_in_seconds:
+            yield from self.redis_conn.zremrangebyscore(self.indicator_name, ZScoreBoundary('-inf'),
+                                                        ZScoreBoundary(now().timestamp() - self.max_data_age_in_seconds))
 
     @asyncio.coroutine
-    def save(self, average_message):
-        with (yield from self.db) as conn:
-            cursor = yield from conn.cursor()
-            yield from cursor.execute(
-                'INSERT INTO current_cost (timestamp, watt, minutes, nb_data, temperature) values (\'%s\', %s, %s, %s, %s) ' % (
-                    average_message['date'].strftime('%Y-%m-%d %H:%M:%S'), average_message['watt'], average_message['minutes'],
-                    average_message['nb_data'],
-                    average_message['temperature']))
-            yield from cursor.close()
+    def get_average(self):
+        val = yield from self.redis_conn.zrange(self.indicator_name, 0, -1)
+        d = yield from val.asdict()
+        return mean((float(v) for v in list(d))) if d else 0.0
+
 
 
 if __name__ == '__main__':

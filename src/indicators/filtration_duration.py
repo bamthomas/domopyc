@@ -1,7 +1,8 @@
 from asyncio import get_event_loop
 from daq.publishers.redis_publisher import RedisPublisher
 from daq.rfxcom_emiter_receiver import RfxcomReader
-from rfxcom_toolbox.rfxcom_redis import create_redis_pool
+from subscribers.redis_toolbox import create_redis_pool
+
 
 dev_name = '/dev/serial/by-id/usb-RFXCOM_RFXtrx433_A1XZI13O-if00-port0'
 

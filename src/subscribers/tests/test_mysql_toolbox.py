@@ -5,9 +5,10 @@ import asyncio
 import aiomysql
 from iso8601_json import Iso8601DateEncoder
 
-from current_cost.sensor import current_cost_async
-from current_cost.sensor.current_cost_async import MysqlAverageMessageHandler
-from rfxcom_toolbox.tests.test_rfxcom_redis import async_coro
+from subscribers import redis_toolbox
+from subscribers.mysql_toolbox import MysqlAverageMessageHandler
+from test_utils.ut_async import async_coro
+
 
 __author__ = 'bruno'
 
@@ -23,7 +24,7 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
             cur = yield from conn.cursor()
             yield from cur.execute("drop table if EXISTS current_cost")
 
-        current_cost_async.now = lambda: datetime(2012, 12, 13, 14, 2, 0, tzinfo=timezone.utc)
+        redis_toolbox.now = lambda: datetime(2012, 12, 13, 14, 2, 0, tzinfo=timezone.utc)
         self.message_handler = MysqlAverageMessageHandler(self.pool)
 
     @async_coro
@@ -40,7 +41,7 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
             current_cost_table = yield from cur.fetchall()
             self.assertEqual((('current_cost',),), current_cost_table)
 
-            current_cost_async.MysqlAverageMessageHandler(self.pool, average_period_minutes=10)
+            MysqlAverageMessageHandler(self.pool, average_period_minutes=10)
 
             yield from cur.execute("show tables like 'current_cost'")
             current_cost_table = yield from cur.fetchall()

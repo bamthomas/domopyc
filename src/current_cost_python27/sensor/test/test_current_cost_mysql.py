@@ -1,9 +1,9 @@
 from datetime import datetime
 from json import dumps
 import unittest
-from current_cost.iso8601_json import Iso8601DateEncoder
+from subscribers.iso8601_json import Iso8601DateEncoder
 import pymysql
-from current_cost.sensor import current_cost
+from subscribers.sensor import current_cost
 
 __author__ = 'bruno'
 

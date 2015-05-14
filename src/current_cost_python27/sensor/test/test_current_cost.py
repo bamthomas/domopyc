@@ -2,11 +2,11 @@ from json import dumps, loads
 from queue import Queue, Empty
 import unittest
 from datetime import datetime, timezone
-from current_cost.iso8601_json import Iso8601DateEncoder, with_iso8601_date
+from subscribers.iso8601_json import Iso8601DateEncoder, with_iso8601_date
 
 import redis
-from current_cost.sensor import current_cost
-from current_cost.sensor.current_cost import CURRENT_COST, CurrentCostReader
+from subscribers.sensor import current_cost
+from subscribers.sensor.current_cost import CURRENT_COST, CurrentCostReader
 
 __author__ = 'bruno'
 

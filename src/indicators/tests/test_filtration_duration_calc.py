@@ -1,5 +1,5 @@
 import unittest
-from rfxcom_toolbox import filtration_duration
+from indicators import filtration_duration
 
 
 class TestFiltrationDurationCalc(unittest.TestCase):
