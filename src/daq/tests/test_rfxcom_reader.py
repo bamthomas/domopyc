@@ -15,7 +15,7 @@ class TestRfxcomReader(WithRedis):
     def test_read_data(self):
         rfxcom_emiter_receiver.now = lambda: datetime(2015, 2, 14, 15, 0, 0, tzinfo=timezone.utc)
         self.subscriber = yield from self.connection.start_subscribe()
-        yield from self.subscriber.subscribe([RfxcomReader.RFXCOM_KEY])
+        yield from self.subscriber.subscribe([rfxcom_emiter_receiver.RFXCOM_KEY])
         packet = DummyPacket().load(
             {'packet_length': 10, 'packet_type_name': 'Temperature and humidity sensors', 'sub_type': 1,
              'packet_type': 82, 'temperature': 22.2, 'humidity_status': 0, 'humidity': 0,
@@ -23,7 +23,7 @@ class TestRfxcomReader(WithRedis):
              'battery_signal_level': 128, 'signal_strength': 128, 'id': '0xBB02',
              'sub_type_name': 'THGN122/123, THGN132, THGR122/228/238/268'})
 
-        RfxcomReaderForTest(RedisPublisher(self.connection, RfxcomReader.RFXCOM_KEY)).handle_temp_humidity(packet)
+        RfxcomReaderForTest(RedisPublisher(self.connection, rfxcom_emiter_receiver.RFXCOM_KEY)).handle_temp_humidity(packet)
 
         message = yield from asyncio.wait_for(self.subscriber.next_published(), 1)
         self.assertDictEqual(dict(packet.data, date=rfxcom_emiter_receiver.now().isoformat()), loads(message.value))

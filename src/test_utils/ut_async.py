@@ -1,5 +1,6 @@
 # coding=utf-8
 import asyncio
+from asyncio import Queue
 import functools
 
 
@@ -13,3 +14,10 @@ def async_coro(f):
             loop.run_until_complete(future)
         return wrapper
     return wrap(f)
+
+
+class TestMessageHandler(object):
+    queue = Queue()
+    @asyncio.coroutine
+    def handle(self, message):
+        yield from self.queue.put(message)

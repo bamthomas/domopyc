@@ -6,7 +6,7 @@ import asyncio
 from asyncio import Queue
 from daq import current_cost_sensor
 from daq.current_cost_sensor import AsyncCurrentCostReader
-from test_utils.ut_async import async_coro
+from test_utils.ut_async import async_coro, TestMessageHandler
 
 
 class DummySerial():
@@ -52,10 +52,3 @@ class CurrentCostReaderTest(unittest.TestCase):
 
         event = yield from asyncio.wait_for(self.handler.queue.get(), 1)
         self.assertDictEqual(event, {'date': (current_cost_sensor.now().isoformat()), 'watt': 305, 'temperature': 21.4})
-
-
-class TestMessageHandler(object):
-    queue = Queue()
-    @asyncio.coroutine
-    def handle(self, message):
-        yield from self.queue.put(message)

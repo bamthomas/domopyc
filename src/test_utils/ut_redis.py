@@ -1,8 +1,8 @@
 # coding=utf-8
 import asyncio
 import unittest
+
 import asyncio_redis
-from test_utils.ut_async import async_coro
 
 
 @asyncio.coroutine
@@ -12,7 +12,7 @@ def create_redis_pool():
 
 
 class WithRedis(unittest.TestCase):
-    @async_coro
+    @asyncio.coroutine
     def setUp(self):
         self.connection = yield from create_redis_pool()
         yield from self.connection.flushdb()

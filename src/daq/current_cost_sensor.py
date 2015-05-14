@@ -11,13 +11,14 @@ logging.basicConfig(format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
 LOGGER = logging.getLogger('current_cost')
 
 DEVICE = '/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller-if00-port0'
+CURRENT_COST_KEY = 'current_cost'
 
 
-def now(): return datetime.now()
+def now():
+    return datetime.now()
 
 
 class AsyncCurrentCostReader(FileLike):
-    CURRENT_COST_KEY = 'current_cost'
 
     def __init__(self, drv, publisher, event_loop=asyncio.get_event_loop()):
         super().__init__()

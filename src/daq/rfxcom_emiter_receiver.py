@@ -1,5 +1,6 @@
 # coding=utf-8
 import asyncio
+from datetime import datetime
 import logging
 from rfxcom import protocol
 from rfxcom.transport import AsyncioTransport
@@ -11,13 +12,14 @@ root.setLevel(logging.INFO)
 
 logger = logging.getLogger('rfxcom')
 
+RFXCOM_KEY = "rfxcom"
 
-def now(): return datetime.now()
+
+def now():
+    return datetime.now()
 
 
 class RfxcomReader(object):
-    RFXCOM_KEY = "rfxcom"
-
     def __init__(self, device, publisher, event_loop=asyncio.get_event_loop()):
         self.publisher = publisher
         self.rfxcom_transport = self.create_transport(device, event_loop)
