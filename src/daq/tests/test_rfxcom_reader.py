@@ -11,6 +11,11 @@ from test_utils.ut_redis import WithRedis
 
 
 class TestRfxcomReader(WithRedis):
+
+    @async_coro
+    def setUp(self):
+        yield from super().setUp()
+
     @async_coro
     def test_read_data(self):
         rfxcom_emiter_receiver.now = lambda: datetime(2015, 2, 14, 15, 0, 0, tzinfo=timezone.utc)
