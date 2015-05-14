@@ -9,7 +9,7 @@ from test_utils.ut_async import async_coro
 from test_utils.ut_redis import WithRedis
 
 
-class TestPoolSubscriber(WithRedis):
+class TestRedisTimeCappedSubscriber(WithRedis):
 
     @async_coro
     def setUp(self):

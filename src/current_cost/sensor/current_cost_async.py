@@ -30,7 +30,7 @@ class AsyncRedisSubscriber(object):
         self.redis_conn = redis_conn
         self.subscriber = None
         self.message_loop_task = None
-        asyncio.new_event_loop().run_until_complete(self.setup_subscriber())
+        asyncio.async(self.setup_subscriber())
 
     @asyncio.coroutine
     def setup_subscriber(self):
