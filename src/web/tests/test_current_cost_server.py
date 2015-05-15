@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 from json import dumps
 import unittest
-from site import current_cost_server
-from site.current_cost_server import REDIS, get_current_cost_data, LiveDataMessageHandler
+from web import current_cost_server
+from web.current_cost_server import REDIS, get_current_cost_data, LiveDataMessageHandler
 
 
 __author__ = 'bruno'
