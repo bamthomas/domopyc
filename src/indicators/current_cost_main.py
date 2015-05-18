@@ -1,11 +1,11 @@
 import asyncio
-from daq.current_cost_sensor import AsyncCurrentCostReader, CURRENT_COST_KEY, LOGGER
+from daq.current_cost_sensor import AsyncCurrentCostReader, CURRENT_COST_KEY, LOGGER, DEVICE
 from daq.publishers.redis_publisher import RedisPublisher, create_redis_connection
 import serial
 
 
 if __name__ == '__main__':
-    serial_drv = serial.Serial('/dev/ttyUSB0', baudrate=57600,
+    serial_drv = serial.Serial(DEVICE, baudrate=57600,
                                bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,
                                timeout=10)
 
