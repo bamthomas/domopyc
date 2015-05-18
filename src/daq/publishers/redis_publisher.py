@@ -7,9 +7,13 @@ import asyncio_redis
 
 
 #duplicate from redis_toolbox
-@asyncio.coroutine
 def create_redis_pool(size):
-    connection = yield from asyncio_redis.Pool.create(host='localhost', port=6379, poolsize=size)
+    pool = yield from asyncio_redis.Pool.create(host='localhost', port=6379, poolsize=size)
+    return pool
+
+
+def create_redis_connection():
+    connection = yield from asyncio_redis.Connection.create(host='localhost', port=6379)
     return connection
 
 
