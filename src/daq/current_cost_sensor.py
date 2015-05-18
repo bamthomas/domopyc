@@ -2,13 +2,19 @@
 import asyncio
 from datetime import datetime
 import logging
-from serial import FileLike
+from logging.handlers import SysLogHandler
 import xml.etree.cElementTree as ET
+
+from serial import FileLike
+
 
 CURRENT_COST = 'current_cost'
 
 logging.basicConfig(format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
 LOGGER = logging.getLogger('current_cost')
+LOGGER.setLevel(logging.INFO)
+LOGGER.addHandler(SysLogHandler())
+
 
 DEVICE = '/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller-if00-port0'
 CURRENT_COST_KEY = 'current_cost'
@@ -28,7 +34,9 @@ class AsyncCurrentCostReader(FileLike):
         self.event_loop.add_reader(self.serial_drv.fd, self.read_callback)
 
     def read_callback(self):
+        LOGGER.debug('reading line from sensor')
         line = self.readline()
+        LOGGER.debug('line : %s' % line)
         if line:
             try:
                 xml_data = ET.fromstring(line)
