@@ -1,20 +1,23 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-        "http://www.w3.org/TR/html4/loose.dtd">
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Current Cost</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domopyc - La Pause De Frontel - Saint-Pierre</title>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
     <script src="{{ url_for('static', filename='highcharts.js') }}" type="text/javascript"></script>
-    <style type="text/css">
-        .watt {
-            font-family: monospace;
-            font-size: 40px;
-        }
+    <script src="{{ url_for('static', filename='ui.js' ) }}"></script>
 
-        div {
-            text-align: center;
-        }
-    </style>
+    <!--[if lte IE 8]>
+    <link rel="stylesheet" href="{{ url_for('static', filename='side-menu-old-ie.css') }}">
+    <![endif]-->
+    <!--[if gt IE 8]><!-->
+    <link rel="stylesheet" href="{{ url_for('static', filename='side-menu.css') }}">
+    <!--<![endif]-->
+    <!--[if lt IE 9]>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7/html5shiv.js"></script>
+    <![endif]-->
     <script type="text/javascript">
         var CURRENT_WH = 0;
         var LAST_TIMESTAMP = new Date().getTime();
@@ -113,18 +116,49 @@
     </script>
 </head>
 <body>
-<div>
-    <div class="watt"><span id="current">?</span>&nbsp;Watt</div>
-    <div><span id="wh">?</span>Wh&nbsp;(<span id="cost">?</span>&euro;)</div>
-    <div id="graph" style="min-width: 400px; height: 400px; margin: 0 auto"></div>
-    <button onclick="today_chart()">aujourd'hui</button>
-    <button onclick="since(60)">1h</button>
-    <button onclick="since(30)">1/2h</button>
-    <button onclick="since(15)">1/4h</button>
-    <button onclick="since(10)">10mn</button>
+
+
+<div id="layout">
+    <!-- Menu toggle -->
+    <a href="#menu" id="menuLink" class="menu-link">
+        <!-- Hamburger icon -->
+        <span></span>
+    </a>
+
+    <div id="menu">
+        <div class="pure-menu">
+            <a class="pure-menu-heading" href="#">domopyc</a>
+
+            <ul class="pure-menu-list">
+                <li class="pure-menu-item"><a href="#" class="pure-menu-link">Conso électrique</a></li>
+                <li class="pure-menu-item"><a href="#" class="pure-menu-link">Conso tps réel</a></li>
+                <li class="pure-menu-item"><a href="#" class="pure-menu-link">Filtration Piscine</a></li>
+                <li class="pure-menu-item"><a href="#" class="pure-menu-link">Commandes</a></li>
+                <li class="pure-menu-item"><a href="#" class="pure-menu-link">A propos</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="main">
+        <div class="header">
+            <h1>La Pause de Frontel</h1>
+
+            <h2>Consommation Electrique temps réel</h2>
+        </div>
+
+        <div class="content">
+            <div class="watt"><span id="current">?</span>&nbsp;Watt</div>
+               <div><span id="wh">?</span>Wh&nbsp;(<span id="cost">?</span>&euro;)</div>
+               <div id="graph" style="min-width: 400px; height: 400px; margin: 0 auto"></div>
+               <button onclick="today_chart()">aujourd'hui</button>
+               <button onclick="since(60)">1h</button>
+               <button onclick="since(30)">1/2h</button>
+               <button onclick="since(15)">1/4h</button>
+               <button onclick="since(10)">10mn</button>
+        </div>
+    </div>
 </div>
+
 
 </body>
 </html>
-
-
