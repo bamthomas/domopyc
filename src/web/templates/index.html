@@ -18,7 +18,8 @@
     <!--[if lt IE 9]>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7/html5shiv.js"></script>
     <![endif]-->
-
+    {% block css %}
+   {% endblock %}
 </head>
 <body>
 
@@ -32,14 +33,14 @@
 
     <div id="menu">
         <div class="pure-menu">
-            <a class="pure-menu-heading" href="#">domopyc</a>
+            <a class="pure-menu-heading" href="/">domopyc</a>
 
             <ul class="pure-menu-list">
-                <li class="pure-menu-item"><a href="ce" class="pure-menu-link">Conso électrique</a></li>
-                <li class="pure-menu-item"><a href="ctr" class="pure-menu-link">Conso tps réel</a></li>
-                <li class="pure-menu-item"><a href="piscine" class="pure-menu-link">Filtration Piscine</a></li>
-                <li class="pure-menu-item"><a href="commandes" class="pure-menu-link">Commandes</a></li>
-                <li class="pure-menu-item"><a href="apropos" class="pure-menu-link">A propos</a></li>
+                <li class="pure-menu-item"><a href="/menu/conso_electrique" class="pure-menu-link">Conso électrique</a></li>
+                <li class="pure-menu-item"><a href="/menu/conso_temps_reel" class="pure-menu-link">Conso tps réel</a></li>
+                <li class="pure-menu-item"><a href="/menu/piscine" class="pure-menu-link">Filtration Piscine</a></li>
+                <li class="pure-menu-item"><a href="/menu/commandes" class="pure-menu-link">Commandes</a></li>
+                <li class="pure-menu-item menu-item-divided"><a href="/menu/apropos" class="pure-menu-link">A propos</a></li>
             </ul>
         </div>
     </div>

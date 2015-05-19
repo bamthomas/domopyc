@@ -1,8 +1,14 @@
 {% extends "index.html" %}
 
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='apropos.css') }}">
+{% endblock %}
+
 {% block main %}
 <div class="header">
-    <h1>A propos</h1>
+    <h1>La Pause de Frontel</h1>
+
+    <h2>A propos</h2>
 </div>
 <div class="pure-g-r content">
     <div class="pure-u-1">
@@ -17,7 +23,7 @@
             Pour le serveur <a href="http://flask.pocoo.org/"><img src="http://flask.pocoo.org/static/logo/flask.svg"
                                                                    height="40"/></a>, <a href="http://dev.mysql.com/"><img
                 src="http://dev.mysql.com/common/logos/logo-mysql-110x57.png"/></a> et <a
-                href="http://www.redis.io"><img src="http://download.redis.io/logocontest/82.png" height="30"/></a>
+                href="http://www.redis.io"><img src="http://download.redis.io/logocontest/82.png" height="40"/></a>
         </p>
 
         <p>
@@ -25,5 +31,4 @@
         </p>
     </div>
 </div>
-
 {% endblock %}
