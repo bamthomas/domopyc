@@ -50,6 +50,12 @@ def stream():
 @app.route('/')
 def home():
     return render_template('index.html')
+@app.route('/ctr')
+def conso_temps_reel():
+    return render_template('conso_temps_reel.html')
+@app.route('/apropos')
+def apropos():
+    return render_template('apropos.html')
 
 
 @app.route('/today')

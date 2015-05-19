@@ -1,130 +1,56 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-        "http://www.w3.org/TR/html4/loose.dtd">
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Current Cost</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domopyc - La Pause De Frontel - Saint-Pierre</title>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
     <script src="{{ url_for('static', filename='highcharts.js') }}" type="text/javascript"></script>
-    <style type="text/css">
-        .watt {
-            font-family: monospace;
-            font-size: 40px;
-        }
+    <script src="{{ url_for('static', filename='ui.js' ) }}"></script>
 
-        div {
-            text-align: center;
-        }
-    </style>
-    <script type="text/javascript">
-        var CURRENT_WH = 0;
-        var LAST_TIMESTAMP = new Date().getTime();
-        function update_power_display() {
-            $("#wh").text(CURRENT_WH.toFixed(2));
-            $("#cost").text((CURRENT_WH * (0.0812 + 0.009 + 0.009) * 1.196 / 1000).toFixed(2));
-        }
-        var chart;
-        $(document).ready(function () {
-            Highcharts.setOptions({
-                global: {
-                    useUTC: false
-                }
-            });
+    <!--[if lte IE 8]>
+    <link rel="stylesheet" href="{{ url_for('static', filename='side-menu-old-ie.css') }}">
+    <![endif]-->
+    <!--[if gt IE 8]><!-->
+    <link rel="stylesheet" href="{{ url_for('static', filename='side-menu.css') }}">
+    <!--<![endif]-->
+    <!--[if lt IE 9]>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7/html5shiv.js"></script>
+    <![endif]-->
 
-            chart = new Highcharts.Chart({
-                chart: {
-                    renderTo: 'graph',
-                    type: 'areaspline',
-                    marginRight: 10
-                },
-                title: {
-                    text: 'Consommation courante'
-                },
-                xAxis: {
-                    type: 'datetime',
-                    tickPixelInterval: 150
-                },
-                yAxis: {
-                    title: {
-                        text: 'Watt'
-                    }
-                },
-                tooltip: {
-                    formatter: function () {
-                        return '<b>' + this.series.name + '</b><br/>' +
-                                Highcharts.dateFormat('%H:%M:%S', this.x) + ': <b>' + this.y + ' w</b>';
-                    }
-                },
-                legend: {
-                    enabled: false
-                },
-                exporting: {
-                    enabled: false
-                },
-                series: [
-                    {
-                        name: 'Consommation courante',
-                        data: []
-                    }
-                ]
-            });
-            var sse = function () {
-                var source = new EventSource('/stream');
-                source.onmessage = function (e) {
-                    var item = JSON.parse(e.data);
-                    $("#current").text(item.watt);
-                    var timestamp = new Date().getTime();
-                    CURRENT_WH += (timestamp - LAST_TIMESTAMP) * item.watt / (3600 * 1000);
-                    update_power_display();
-                    chart.series[0].addPoint([timestamp, item.watt], true, true);
-                    LAST_TIMESTAMP = timestamp;
-                };
-            }();
-            today_chart();
-        });
-
-        function today_chart() {
-            $.getJSON('/today', function (json_data) {
-                var data = [];
-                var total_minutes = 0;
-                var total_watts = 0;
-                for (var index = 0; index < json_data.points.length; index++) {
-                    var point = json_data.points[index];
-                    total_minutes += point['minutes'];
-                    total_watts += point['watt'];
-                    data.push([new Date(point['date']).getTime(), point['watt']]);
-                }
-                CURRENT_WH = (total_watts * total_minutes) / (data.length * 60);
-                update_power_display();
-                chart.series[0].setData(data, true);
-                chart.redraw();
-            });
-        }
-        function since(minutes) {
-            $.getJSON('/data_since/' + minutes, function (json_data) {
-                var data = [];
-                for (var index = 0; index < json_data.points.length; index++) {
-                    var point = json_data.points[index];
-                    data.push([new Date(point['date']).getTime(), point['watt']]);
-                }
-                chart.series[0].setData(data, true);
-                chart.redraw();
-            });
-        }
-    </script>
 </head>
 <body>
-<div>
-    <div class="watt"><span id="current">?</span>&nbsp;Watt</div>
-    <div><span id="wh">?</span>Wh&nbsp;(<span id="cost">?</span>&euro;)</div>
-    <div id="graph" style="min-width: 400px; height: 400px; margin: 0 auto"></div>
-    <button onclick="today_chart()">aujourd'hui</button>
-    <button onclick="since(60)">1h</button>
-    <button onclick="since(30)">1/2h</button>
-    <button onclick="since(15)">1/4h</button>
-    <button onclick="since(10)">10mn</button>
+
+
+<div id="layout">
+    <!-- Menu toggle -->
+    <a href="#menu" id="menuLink" class="menu-link">
+        <!-- Hamburger icon -->
+        <span></span>
+    </a>
+
+    <div id="menu">
+        <div class="pure-menu">
+            <a class="pure-menu-heading" href="#">domopyc</a>
+
+            <ul class="pure-menu-list">
+                <li class="pure-menu-item"><a href="ce" class="pure-menu-link">Conso électrique</a></li>
+                <li class="pure-menu-item"><a href="ctr" class="pure-menu-link">Conso tps réel</a></li>
+                <li class="pure-menu-item"><a href="piscine" class="pure-menu-link">Filtration Piscine</a></li>
+                <li class="pure-menu-item"><a href="commandes" class="pure-menu-link">Commandes</a></li>
+                <li class="pure-menu-item"><a href="apropos" class="pure-menu-link">A propos</a></li>
+            </ul>
+        </div>
+    </div>
+
+    {% block main %}
+    {% endblock %}
+
 </div>
+
+{% block js %}
+{% endblock %}
 
 </body>
 </html>
-
-
