@@ -17,12 +17,12 @@ $(document).ready(function () {
 
     chart = new Highcharts.Chart({
         chart: {
-            renderTo: 'graph',
+            renderTo: 'chart',
             type: 'areaspline',
             marginRight: 10
         },
         title: {
-            text: 'Consommation courante'
+            text: 'Consommation par jour'
         },
         xAxis: {
             type: 'datetime',

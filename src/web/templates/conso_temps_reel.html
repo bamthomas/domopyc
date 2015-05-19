@@ -11,12 +11,13 @@
     <div class="content">
         <div class="watt"><span id="current">?</span>&nbsp;Watt</div>
         <div><span id="wh">?</span>Wh&nbsp;(<span id="cost">?</span>&euro;)</div>
-        <div id="graph" style="min-width: 400px; height: 400px; margin: 0 auto"></div>
-        <button onclick="today_chart()">aujourd'hui</button>
-        <button onclick="since(60)">1h</button>
-        <button onclick="since(30)">1/2h</button>
-        <button onclick="since(15)">1/4h</button>
-        <button onclick="since(10)">10mn</button>
+        <div id="chart"></div>
+        <div align="center">
+            <button class="button-success pure-button" onclick="today_chart()">aujourd'hui</button>
+            <button class="button-secondary pure-button" onclick="since(60)">1h</button>
+            <button class="button-warning pure-button" onclick="since(30)">1/2h</button>
+            <button class="pure-button" onclick="since(10)">10mn</button>
+        </div>
     </div>
 </div>
 {% endblock %}
