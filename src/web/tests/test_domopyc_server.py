@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 from json import dumps
 import unittest
-from web import current_cost_server
-from web.current_cost_server import REDIS, get_current_cost_data, LiveDataMessageHandler
+from web import domopyc_server
+from web.domopyc_server import REDIS, get_current_cost_data, LiveDataMessageHandler
 
 
 __author__ = 'bruno'
@@ -46,13 +46,13 @@ class RedisGetLiveData(unittest.TestCase):
         now = datetime.now()
         live_data_handler = LiveDataMessageHandler(self.myredis)
 
-        current_cost_server.now = lambda: now
+        domopyc_server.now = lambda: now
         live_data_handler.handle(dumps({'watt': 100}))
 
-        current_cost_server.now = lambda: now + timedelta(minutes=30)
+        domopyc_server.now = lambda: now + timedelta(minutes=30)
         live_data_handler.handle(dumps({'watt': 200}))
 
-        current_cost_server.now = lambda: now + timedelta(minutes=61)
+        domopyc_server.now = lambda: now + timedelta(minutes=61)
         live_data_handler.handle(dumps({'watt': 300}))
 
         self.assertEqual(2, len(live_data_handler.get_data(since_minutes=60)))
