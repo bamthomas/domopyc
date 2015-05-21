@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
     <script src="{{ url_for('static', filename='highcharts.js') }}" type="text/javascript"></script>
-    <script src="{{ url_for('static', filename='ui.js' ) }}"></script>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='domopyc.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='font-awesome-4.3.0/css/font-awesome.min.css') }}">
 
@@ -35,7 +35,7 @@
 
     <div id="menu">
         <div class="pure-menu">
-            <a class="pure-menu-heading" href="/">domopyc</a>
+            <a class="pure-menu-heading" href="#">domopyc</a>
 
             <ul class="pure-menu-list">
                 <li class="pure-menu-item"><a href="/menu/conso_electrique" class="pure-menu-link">Conso électrique</a></li>
@@ -54,6 +54,8 @@
 
 {% block js %}
 {% endblock %}
+
+<script src="{{ url_for('static', filename='ui.js' ) }}"></script>
 
 </body>
 </html>
