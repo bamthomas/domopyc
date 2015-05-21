@@ -22,7 +22,7 @@ $(document).ready(function () {
             ignoreHiddenSeries: false
         },
         title: {
-            text: ''
+            text: 'Consommation en Watt'
         },
         plotOptions: {
             areaspline: {

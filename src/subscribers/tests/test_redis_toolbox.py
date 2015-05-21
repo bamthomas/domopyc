@@ -2,8 +2,9 @@ from asyncio import Queue
 import asyncio
 from json import dumps, loads
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from daq import rfxcom_emiter_receiver
+from daq.current_cost_sensor import CURRENT_COST_KEY
 
 from iso8601_json import Iso8601DateEncoder, with_iso8601_date
 from subscribers import redis_toolbox
@@ -147,3 +148,29 @@ class TestRedisTimeCappedSubscriber(WithRedis):
 
         value = yield from pool_temp.get_average()
         self.assertEqual(5.0, value)
+
+    @async_coro
+    def test_get_live_data(self):
+        live_data_handler = RedisTimeCappedSubscriber(self.connection, 'live_data', 3600, pubsub_key=CURRENT_COST_KEY, indicator_key='watt')
+        yield from live_data_handler.handle({'date': redis_toolbox.now(), 'watt': 100})
+
+        data = yield from live_data_handler.get_data()
+
+        self.assertEqual(1, len(data))
+        self.assertEqual({'watt': 100}, data[0])
+
+    @async_coro
+    def test_get_live_data_keeps_one_hour_data(self):
+        test_now = datetime.now()
+        live_data_handler = RedisTimeCappedSubscriber(self.connection, 'live_data', 3600, pubsub_key=CURRENT_COST_KEY, indicator_key='watt')
+
+        redis_toolbox.now = lambda: test_now
+        yield from live_data_handler.handle({'date': redis_toolbox.now(), 'watt': 100})
+        redis_toolbox.now = lambda: test_now + timedelta(seconds=1800)
+        yield from live_data_handler.handle({'date': redis_toolbox.now(), 'watt': 200})
+        redis_toolbox.now = lambda: test_now + timedelta(seconds=3660)
+        yield from live_data_handler.handle({'date': redis_toolbox.now(), 'watt': 300})
+
+        self.assertEqual(2, len((yield from live_data_handler.get_data(since_seconds=3600))))
+        self.assertEqual(1, len((yield from live_data_handler.get_data(since_seconds=1800))))
+

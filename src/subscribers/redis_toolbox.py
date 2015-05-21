@@ -1,15 +1,16 @@
 # coding=utf-8
 from datetime import datetime, timedelta
 from statistics import mean
+from json import loads, dumps
+import logging
+import asyncio
+import time
+
 from asyncio_redis import ZScoreBoundary
 import asyncio_redis
 from daq import rfxcom_emiter_receiver
 from daq.current_cost_sensor import AsyncCurrentCostReader, DEVICE
 from functools import reduce
-from json import loads, dumps
-import logging
-import asyncio
-
 import serial
 from iso8601_json import with_iso8601_date, Iso8601DateEncoder
 
@@ -48,7 +49,8 @@ class AsyncRedisSubscriber(object):
         yield from self.subscriber.subscribe([self.pubsub_key])
 
     def start(self, for_n_messages=0):
-        predicate = AsyncRedisSubscriber.infinite_loop if for_n_messages == 0 else AsyncRedisSubscriber.wait_value(for_n_messages)
+        predicate = AsyncRedisSubscriber.infinite_loop if for_n_messages == 0 else AsyncRedisSubscriber.wait_value(
+            for_n_messages)
         self.message_loop_task = asyncio.async(self.message_loop(predicate))
         return self
 
@@ -113,7 +115,8 @@ class RedisAverageMessageHandler(AverageMessageHandler):
 
 
 class RedisTimeCappedSubscriber(AsyncRedisSubscriber):
-    def __init__(self, redis_conn, indicator_name, max_data_age_in_seconds=0, pubsub_key=rfxcom_emiter_receiver.RFXCOM_KEY,
+    def __init__(self, redis_conn, indicator_name, max_data_age_in_seconds=0,
+                 pubsub_key=rfxcom_emiter_receiver.RFXCOM_KEY,
                  indicator_key='temperature'):
         super().__init__(redis_conn, self, pubsub_key)
         self.indicator_key = indicator_key
@@ -122,16 +125,26 @@ class RedisTimeCappedSubscriber(AsyncRedisSubscriber):
 
     @asyncio.coroutine
     def handle(self, message):
-        yield from self.redis_conn.zadd(self.indicator_name, {str(message[self.indicator_key]): message['date'].timestamp()})
+        yield from self.redis_conn.zadd(self.indicator_name,
+                                        {str(message[self.indicator_key]): message['date'].timestamp()})
         if self.max_data_age_in_seconds:
             yield from self.redis_conn.zremrangebyscore(self.indicator_name, ZScoreBoundary('-inf'),
-                                                        ZScoreBoundary(now().timestamp() - self.max_data_age_in_seconds))
+                                                        ZScoreBoundary(
+                                                            now().timestamp() - self.max_data_age_in_seconds))
 
     @asyncio.coroutine
     def get_average(self):
         val = yield from self.redis_conn.zrange(self.indicator_name, 0, -1)
         d = yield from val.asdict()
         return mean((float(v) for v in list(d))) if d else 0.0
+
+    @asyncio.coroutine
+    def get_data(self, since_seconds=60):
+        t = yield from self.redis_conn.zrangebyscore(self.indicator_name,
+                                                            ZScoreBoundary(now().timestamp() - since_seconds),
+                                                            ZScoreBoundary(now().timestamp()))
+        data_set = yield from t.asdict()
+        return list(map(lambda value: {self.indicator_key: int(value)}, list(data_set)))
 
 
 
