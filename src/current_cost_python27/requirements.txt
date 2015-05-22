@@ -1,7 +1,0 @@
-iso8601
-nose
-pyserial
-redis
-rednose
-flask
-pymysql

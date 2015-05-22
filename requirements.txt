@@ -1,5 +1,4 @@
 rfxcom
-redis
 asyncio_redis
 iso8601
 aiomysql
