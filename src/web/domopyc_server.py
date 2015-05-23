@@ -30,6 +30,7 @@ def message_stream():
 
 
 @app.route('/stream')
+@asyncio.coroutine
 def stream():
     data = yield from message_stream()
     return flask.Response(data, mimetype="text/event-stream")
