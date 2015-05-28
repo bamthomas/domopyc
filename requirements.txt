@@ -3,6 +3,7 @@ asyncio_redis
 iso8601
 aiomysql
 aiohttp
+aiohttp_jinja2
 flask
 # tests
 nose
