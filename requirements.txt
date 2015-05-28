@@ -3,5 +3,6 @@ asyncio_redis
 iso8601
 aiomysql
 aiohttp
+flask
 # tests
 nose
