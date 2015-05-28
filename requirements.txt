@@ -2,6 +2,6 @@ rfxcom
 asyncio_redis
 iso8601
 aiomysql
-git+git://github.com/mrdon/flask.git@0.10.1
+aiohttp
 # tests
 nose
