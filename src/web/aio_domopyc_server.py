@@ -46,21 +46,10 @@ def stream(request):
 def home(_):
     return {}
 
-@aiohttp_jinja2.template('apropos.html')
-def apropos(_):
-    return {}
-@aiohttp_jinja2.template('commandes.html')
-def commandes(_):
-    return {}
-@aiohttp_jinja2.template('conso_electrique.html')
-def conso_electrique(_):
-    return {}
-@aiohttp_jinja2.template('conso_temps_reel.html')
-def conso_temps_reel(_):
-    return {}
-@aiohttp_jinja2.template('piscine.html')
-def piscine(_):
-    return {}
+@asyncio.coroutine
+def menu_item(request):
+    page = request.match_info['page']
+    return aiohttp_jinja2.render_template('%s.html' % page, request, {})
 
 @asyncio.coroutine
 def today(request):
@@ -90,11 +79,7 @@ def init(loop):
     app.router.add_route('GET', '/', home)
     app.router.add_route('GET', '/today', today)
     app.router.add_route('GET', '/data_since/{seconds}', livedata)
-    app.router.add_route('GET', '/menu/apropos', apropos)
-    app.router.add_route('GET', '/menu/piscine', piscine)
-    app.router.add_route('GET', '/menu/commandes', commandes)
-    app.router.add_route('GET', '/menu/conso_electrique', conso_electrique)
-    app.router.add_route('GET', '/menu/conso_temps_reel', conso_temps_reel)
+    app.router.add_route('GET', '/menu/{page}', menu_item)
 
     redis_conn = yield from create_redis_connection()
 
