@@ -1,7 +1,7 @@
 # coding=utf-8
 import asyncio
 from datetime import datetime
-from json import loads
+from json import loads, dumps
 
 from aiohttp import web
 import aiohttp_jinja2
@@ -63,34 +63,26 @@ def piscine(_):
     return {}
 
 @asyncio.coroutine
-def today():
-    return {'points': (yield from get_current_cost_data())}
-
-@asyncio.coroutine
-def setup_redis_connection():
-    redis_conn = yield from create_redis_connection()
-
-@asyncio.coroutine
-def setup_live_data_subscriber():
-    redis_conn = yield from create_redis_connection()
-    RedisTimeCappedSubscriber(redis_conn, 'current_cost_live_data', 3600, pubsub_key=CURRENT_COST_KEY, indicator_key='watt').start()
+def today(request):
+    return web.Response(body=dumps({'points': (yield from get_current_cost_data(request.app['redis_connection']))}).encode())
 
 @asyncio.coroutine
 def livedata(request):
     seconds = request.match_info['seconds']
-    return {'points': []}
+    return {'points': request.app['live_data_service'].get_data(since_seconds=seconds)}
 
 @asyncio.coroutine
-def get_current_cost_data():
-    return []
-#     list_reply = yield from app.config['redis_connection'].lrange('current_cost_%s' % datetime.now().strftime('%Y-%m-%d'), 0, -1)
-#     l = yield from list_reply.aslist()
-#     return list(map(lambda json: loads(json, object_hook=with_iso8601_date), l))
+def get_current_cost_data(redis_conn):
+    list_reply = yield from redis_conn.lrange('current_cost_%s' % datetime.now().strftime('%Y-%m-%d'), 0, -1)
+    l = yield from list_reply.aslist()
+    return list(map(lambda json: loads(json, object_hook=with_iso8601_date), l))
 
 
 @asyncio.coroutine
 def init(loop):
     app = web.Application(loop=loop)
+    app['redis_connection'] = yield from create_redis_connection()
+
     app.router.add_static(prefix='/static', path='static')
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader('templates'))
 
@@ -104,6 +96,9 @@ def init(loop):
     app.router.add_route('GET', '/menu/conso_electrique', conso_electrique)
     app.router.add_route('GET', '/menu/conso_temps_reel', conso_temps_reel)
 
+    redis_conn = yield from create_redis_connection()
+
+    app['live_data_service'] = RedisTimeCappedSubscriber(redis_conn, 'current_cost_live_data', 3600, pubsub_key=CURRENT_COST_KEY, indicator_key='watt').start()
 
     srv = yield from loop.create_server(app.make_handler(), '127.0.0.1', 8080)
     print("Server started at http://127.0.0.1:8080")
