@@ -52,20 +52,21 @@ $(document).ready(function () {
             }
         ]
     });
-    var sse = function () {
-        var source = new EventSource('/stream');
-        source.onmessage = function (e) {
-            var item = JSON.parse(e.data);
-            $("#current").text(item.watt);
-            var timestamp = new Date().getTime();
-            CURRENT_WH += (timestamp - LAST_TIMESTAMP) * item.watt / (3600 * 1000);
-            update_power_display();
-            chart.series[0].addPoint([timestamp, item.watt], true, true);
-            LAST_TIMESTAMP = timestamp;
-        };
-    }();
+
+    var socket = new WebSocket("ws://localhost:8080/stream");
+
+    socket.onmessage = function (msg) {
+        var item = JSON.parse(msg);
+        $("#current").text(item.watt);
+        var timestamp = new Date().getTime();
+        CURRENT_WH += (timestamp - LAST_TIMESTAMP) * item.watt / (3600 * 1000);
+        update_power_display();
+        chart.series[0].addPoint([timestamp, item.watt], true, true);
+        LAST_TIMESTAMP = timestamp;
+    };
     today_chart();
 });
+
 
 function today_chart() {
     $.getJSON('/today', function (json_data) {
