@@ -9,9 +9,8 @@ import asyncio_redis
 import jinja2
 
 from daq.current_cost_sensor import CURRENT_COST_KEY
-from iso8601_json import with_iso8601_date
+from iso8601_json import with_iso8601_date, Iso8601DateEncoder
 from subscribers.redis_toolbox import RedisTimeCappedSubscriber
-
 
 now = datetime.now
 
@@ -46,19 +45,24 @@ def stream(request):
 def home(_):
     return {}
 
+
 @asyncio.coroutine
 def menu_item(request):
     page = request.match_info['page']
     return aiohttp_jinja2.render_template('%s.html' % page, request, {})
 
+
 @asyncio.coroutine
 def today(request):
-    return web.Response(body=dumps({'points': (yield from get_current_cost_data(request.app['redis_connection']))}).encode())
+    return web.Response(body=dumps({'points': (yield from get_current_cost_data(request.app['redis_connection']))},
+                                   cls=Iso8601DateEncoder).encode())
+
 
 @asyncio.coroutine
 def livedata(request):
     seconds = request.match_info['seconds']
     return {'points': request.app['live_data_service'].get_data(since_seconds=seconds)}
+
 
 @asyncio.coroutine
 def get_current_cost_data(redis_conn):
@@ -68,8 +72,8 @@ def get_current_cost_data(redis_conn):
 
 
 @asyncio.coroutine
-def init(loop):
-    app = web.Application(loop=loop)
+def init(aio_loop):
+    app = web.Application(loop=aio_loop)
     app['redis_connection'] = yield from create_redis_connection()
 
     app.router.add_static(prefix='/static', path='static')
@@ -83,9 +87,10 @@ def init(loop):
 
     redis_conn = yield from create_redis_connection()
 
-    app['live_data_service'] = RedisTimeCappedSubscriber(redis_conn, 'current_cost_live_data', 3600, pubsub_key=CURRENT_COST_KEY, indicator_key='watt').start()
+    app['live_data_service'] = RedisTimeCappedSubscriber(redis_conn, 'current_cost_live_data', 3600,
+                                                         pubsub_key=CURRENT_COST_KEY, indicator_key='watt').start()
 
-    srv = yield from loop.create_server(app.make_handler(), '127.0.0.1', 8080)
+    srv = yield from aio_loop.create_server(app.make_handler(), '127.0.0.1', 8080)
     print("Server started at http://127.0.0.1:8080")
     return srv
 
