@@ -56,7 +56,7 @@ $(document).ready(function () {
     var socket = new WebSocket("ws://localhost:8080/stream");
 
     socket.onmessage = function (msg) {
-        var item = JSON.parse(msg);
+        var item = JSON.parse(msg.data);
         $("#current").text(item.watt);
         var timestamp = new Date().getTime();
         CURRENT_WH += (timestamp - LAST_TIMESTAMP) * item.watt / (3600 * 1000);

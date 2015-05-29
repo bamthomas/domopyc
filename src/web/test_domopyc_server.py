@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta, timezone
 from json import dumps
+import asyncio
 
 from iso8601_json import Iso8601DateEncoder
 from test_utils.ut_async import async_coro
 from test_utils.ut_redis import WithRedis
 from web import domopyc_server
-from web.domopyc_server import get_current_cost_data, setup_redis_connection
+from web.domopyc_server import get_current_cost_data
 
 
 __author__ = 'bruno'
@@ -15,7 +16,7 @@ class RedisGetDataOfDay(WithRedis):
     @async_coro
     def setUp(self):
         yield from super().setUp()
-        yield from setup_redis_connection()
+        yield from domopyc_server.init(asyncio.get_event_loop())
         yield from self.connection.delete([self.redis_key])
 
     @async_coro
