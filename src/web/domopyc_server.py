@@ -5,12 +5,14 @@ from json import loads, dumps
 
 from aiohttp import web
 import aiohttp_jinja2
+import aiomysql
 import asyncio_redis
 import jinja2
 
 from daq.current_cost_sensor import CURRENT_COST_KEY
 from iso8601_json import with_iso8601_date, Iso8601DateEncoder
 from subscribers.redis_toolbox import RedisTimeCappedSubscriber
+from web.current_cost_mysql_service import CurrentCostDatabaseReader
 
 now = datetime.now
 
@@ -20,6 +22,12 @@ def create_redis_connection():
     connection = yield from asyncio_redis.Connection.create(host='localhost', port=6379)
     return connection
 
+@asyncio.coroutine
+def create_mysql_pool():
+    pool = yield from aiomysql.create_pool(host='127.0.0.1', port=3306,
+                                               user='test', password='test', db='test',
+                                               loop=asyncio.get_event_loop())
+    return pool
 
 @asyncio.coroutine
 def message_stream():
@@ -57,6 +65,10 @@ def today(request):
     return web.Response(body=dumps({'points': (yield from get_current_cost_data(request.app['redis_connection']))},
                                    cls=Iso8601DateEncoder).encode())
 
+@asyncio.coroutine
+def current_cost_data(request):
+    points = yield from request.app['current_cost_service'].get_current_cost_data()
+    return web.Response(body=dumps({'points': points}, cls=Iso8601DateEncoder).encode())
 
 @asyncio.coroutine
 def livedata(request):
@@ -75,6 +87,7 @@ def get_current_cost_data(redis_conn):
 def init(aio_loop):
     app = web.Application(loop=aio_loop)
     app['redis_connection'] = yield from create_redis_connection()
+    app['current_cost_service'] = CurrentCostDatabaseReader((yield from create_mysql_pool()))
 
     app.router.add_static(prefix='/static', path='static')
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader('templates'))
@@ -84,6 +97,7 @@ def init(aio_loop):
     app.router.add_route('GET', '/today', today)
     app.router.add_route('GET', '/data_since/{seconds}', livedata)
     app.router.add_route('GET', '/menu/{page}', menu_item)
+    app.router.add_route('GET', '/current_cost', current_cost_data)
 
     redis_conn = yield from create_redis_connection()
 
