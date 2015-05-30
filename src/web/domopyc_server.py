@@ -72,8 +72,10 @@ def current_cost_data(request):
 
 @asyncio.coroutine
 def livedata(request):
-    seconds = request.match_info['seconds']
-    return {'points': request.app['live_data_service'].get_data(since_seconds=seconds)}
+    seconds = int(request.match_info['seconds'])
+    return web.Response(
+        body=dumps({'points': (yield from request.app['live_data_service'].get_data(request.app['redis_connection'], since_seconds=seconds))},
+                   cls=Iso8601DateEncoder).encode())
 
 
 @asyncio.coroutine

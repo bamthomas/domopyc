@@ -151,10 +151,10 @@ class TestRedisTimeCappedSubscriber(WithRedis):
 
     @async_coro
     def test_get_live_data(self):
-        live_data_handler = RedisTimeCappedSubscriber(self.connection, 'live_data', 3600, pubsub_key=CURRENT_COST_KEY, indicator_key='watt')
+        live_data_handler = RedisTimeCappedSubscriber(self.connection, 'live_data', 3600, pubsub_key=CURRENT_COST_KEY, indicator_key='watt').start()
         yield from live_data_handler.handle({'date': redis_toolbox.now(), 'watt': 100})
 
-        data = yield from live_data_handler.get_data()
+        data = yield from live_data_handler.get_data(self.connection)
 
         self.assertEqual(1, len(data))
         self.assertEqual({'watt': 100}, data[0])
@@ -171,6 +171,6 @@ class TestRedisTimeCappedSubscriber(WithRedis):
         redis_toolbox.now = lambda: test_now + timedelta(seconds=3660)
         yield from live_data_handler.handle({'date': redis_toolbox.now(), 'watt': 300})
 
-        self.assertEqual(2, len((yield from live_data_handler.get_data(since_seconds=3600))))
-        self.assertEqual(1, len((yield from live_data_handler.get_data(since_seconds=1800))))
+        self.assertEqual(2, len((yield from live_data_handler.get_data(self.connection, since_seconds=3600))))
+        self.assertEqual(1, len((yield from live_data_handler.get_data(self.connection, since_seconds=1800))))
 

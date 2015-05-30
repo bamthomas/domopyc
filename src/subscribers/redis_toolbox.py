@@ -22,7 +22,7 @@ logging.basicConfig(format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
 LOGGER = logging.getLogger('current_cost')
 
 
-def now(): return datetime.now()
+now = datetime.now
 
 
 @asyncio.coroutine
@@ -35,17 +35,17 @@ class AsyncRedisSubscriber(object):
     infinite_loop = lambda i: True
     wait_value = lambda n: lambda i: i < n
 
-    def __init__(self, redis_conn, message_handler, pubsub_key):
+    def __init__(self, pubsub_conn, message_handler, pubsub_key):
         self.pubsub_key = pubsub_key
         self.message_handler = message_handler
-        self.redis_conn = redis_conn
+        self.pubsub_conn = pubsub_conn
         self.subscriber = None
         self.message_loop_task = None
         asyncio.new_event_loop().run_until_complete(self.setup_subscriber())
 
     @asyncio.coroutine
     def setup_subscriber(self):
-        self.subscriber = yield from self.redis_conn.start_subscribe()
+        self.subscriber = yield from self.pubsub_conn.start_subscribe()
         yield from self.subscriber.subscribe([self.pubsub_key])
 
     def start(self, for_n_messages=0):
@@ -125,22 +125,22 @@ class RedisTimeCappedSubscriber(AsyncRedisSubscriber):
 
     @asyncio.coroutine
     def handle(self, message):
-        yield from self.redis_conn.zadd(self.indicator_name,
+        yield from self.pubsub_conn.zadd(self.indicator_name,
                                         {str(message[self.indicator_key]): message['date'].timestamp()})
         if self.max_data_age_in_seconds:
-            yield from self.redis_conn.zremrangebyscore(self.indicator_name, ZScoreBoundary('-inf'),
+            yield from self.pubsub_conn.zremrangebyscore(self.indicator_name, ZScoreBoundary('-inf'),
                                                         ZScoreBoundary(
                                                             now().timestamp() - self.max_data_age_in_seconds))
 
     @asyncio.coroutine
     def get_average(self):
-        val = yield from self.redis_conn.zrange(self.indicator_name, 0, -1)
+        val = yield from self.pubsub_conn.zrange(self.indicator_name, 0, -1)
         d = yield from val.asdict()
         return mean((float(v) for v in list(d))) if d else 0.0
 
     @asyncio.coroutine
-    def get_data(self, since_seconds=60):
-        t = yield from self.redis_conn.zrangebyscore(self.indicator_name,
+    def get_data(self, conn, since_seconds=60):
+        t = yield from conn.zrangebyscore(self.indicator_name,
                                                             ZScoreBoundary(now().timestamp() - since_seconds),
                                                             ZScoreBoundary(now().timestamp()))
         data_set = yield from t.asdict()
