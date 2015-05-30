@@ -41,7 +41,7 @@ def stream(request):
     return ws
 
 
-@aiohttp_jinja2.template('index.html')
+@aiohttp_jinja2.template('index.j2')
 def home(_):
     return {}
 
@@ -49,7 +49,7 @@ def home(_):
 @asyncio.coroutine
 def menu_item(request):
     page = request.match_info['page']
-    return aiohttp_jinja2.render_template('%s.html' % page, request, {})
+    return aiohttp_jinja2.render_template('%s.j2' % page, request, {})
 
 
 @asyncio.coroutine
