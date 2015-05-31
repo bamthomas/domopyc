@@ -18,7 +18,7 @@ class MysqlAverageMessageHandler(AverageMessageHandler):
                             `nb_data` int(11) DEFAULT NULL,
                             `temperature` float DEFAULT NULL,
                             PRIMARY KEY (`id`)
-                            ) ENGINE=MyISAM DEFAULT CHARSET=utf8'''
+                            ) ENGINE=InnoDB DEFAULT CHARSET=utf8'''
 
     def __init__(self, db, average_period_minutes=0, loop=asyncio.get_event_loop()):
         super(MysqlAverageMessageHandler, self).__init__(average_period_minutes)
