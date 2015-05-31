@@ -3,7 +3,7 @@ import asyncio
 from datetime import datetime
 from json import loads, dumps
 
-from aiohttp import web
+from aiohttp import web, CIMultiDict
 import aiohttp_jinja2
 import aiomysql
 import asyncio_redis
@@ -68,7 +68,8 @@ def today(request):
 @asyncio.coroutine
 def current_cost_data(request):
     start, interval, data = yield from request.app['current_cost_service'].get_current_cost_data()
-    return web.Response(body=dumps({'start': start, 'interval': interval, 'data': data}, cls=Iso8601DateEncoder).encode())
+    return web.Response(body=dumps({'start': start, 'interval': interval, 'data': data}, cls=Iso8601DateEncoder).encode(),
+                        headers={'Content-Type': 'application/json'})
 
 @asyncio.coroutine
 def livedata(request):
