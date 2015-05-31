@@ -67,8 +67,8 @@ def today(request):
 
 @asyncio.coroutine
 def current_cost_data(request):
-    points = yield from request.app['current_cost_service'].get_current_cost_data()
-    return web.Response(body=dumps({'points': points}, cls=Iso8601DateEncoder).encode())
+    start, interval, data = yield from request.app['current_cost_service'].get_current_cost_data()
+    return web.Response(body=dumps({'start': start, 'interval': interval, 'data': data}, cls=Iso8601DateEncoder).encode())
 
 @asyncio.coroutine
 def livedata(request):
@@ -76,7 +76,6 @@ def livedata(request):
     return web.Response(
         body=dumps({'points': (yield from request.app['live_data_service'].get_data(request.app['redis_connection'], since_seconds=seconds))},
                    cls=Iso8601DateEncoder).encode())
-
 
 @asyncio.coroutine
 def get_current_cost_data(redis_conn):

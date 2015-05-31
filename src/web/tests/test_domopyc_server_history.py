@@ -31,25 +31,37 @@ class RedisGetDataOfDay(TestCase):
             cur = yield from conn.cursor()
             yield from cur.execute("truncate current_cost")
 
-
     @async_coro
     def tearDown(self):
         self.server.close()
+        self.pool.close()
 
+    # @async_coro
+    # def test_get_current_cost_history_one_line(self):
+    #     yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 0, 0, tzinfo=timezone.utc), 'watt': 123, 'minutes': 10, 'nb_data': 120, 'temperature': 20.2})
+    #
+    #     response = yield from aiohttp.request('GET', 'http://127.0.0.1:8080/current_cost')
+    #     json_response = yield from response.json()
+    #
+    #     self.assertEqual('2015-05-28T12:00:00', json_response['start'])
+    #     self.assertEqual(0, int(json_response['interval']))
+    #     self.assertEqual(1, len(json_response['data']))
+    #     self.assertEqual(123, json_response['data'][0])
 
     @async_coro
     def test_get_current_cost_history(self):
-        domopyc_server.now = lambda: datetime(2015, 5, 28, 12, 0, 0, tzinfo=timezone.utc)
-        message = lambda watt: {'date': domopyc_server.now(), 'watt': watt, 'minutes': 10, 'nb_data': 120, 'temperature': 20.2}
-        yield from self.message_handler.save(message(123))
-        domopyc_server.now = lambda: datetime(2015, 5, 28, 12, 10, 0, tzinfo=timezone.utc)
-        yield from self.message_handler.save(message(321))
+        yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 0, 0, tzinfo=timezone.utc), 'watt': 123, 'minutes': 10, 'nb_data': 120, 'temperature': 20.2})
+        yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 10, 0, tzinfo=timezone.utc), 'watt': 321, 'minutes': 10, 'nb_data': 120, 'temperature': 20.2})
+        yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 20, 0, tzinfo=timezone.utc), 'watt': 246, 'minutes': 10, 'nb_data': 120, 'temperature': 20.2})
 
         response = yield from aiohttp.request('GET', 'http://127.0.0.1:8080/current_cost')
-
         json_response = yield from response.json()
-        self.assertEqual(2, len(json_response['points']))
-        self.assertEqual(123, json_response['points'][0][0])
-        self.assertEqual(321, json_response['points'][1][0])
+
+        self.assertEqual('2015-05-28T12:00:00', json_response['start'])
+        self.assertEqual(10 * 60 * 1000, int(json_response['interval']))
+        self.assertEqual(3, len(json_response['data']))
+        self.assertEqual(123, json_response['data'][0])
+        self.assertEqual(321, json_response['data'][1])
+        self.assertEqual(246, json_response['data'][2])
 
 
