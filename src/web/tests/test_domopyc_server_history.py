@@ -50,18 +50,17 @@ class RedisGetDataOfDay(TestCase):
 
     @async_coro
     def test_get_current_cost_history(self):
-        yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 0, 0, tzinfo=timezone.utc), 'watt': 123, 'minutes': 10, 'nb_data': 120, 'temperature': 20.2})
-        yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 10, 0, tzinfo=timezone.utc), 'watt': 321, 'minutes': 10, 'nb_data': 120, 'temperature': 20.2})
-        yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 20, 0, tzinfo=timezone.utc), 'watt': 246, 'minutes': 10, 'nb_data': 120, 'temperature': 20.2})
+        yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 0, 0, tzinfo=timezone.utc), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
+        yield from self.message_handler.save({'date': datetime(2015, 5, 29, 10, 10, 0, tzinfo=timezone.utc), 'watt': 1000, 'minutes': 120, 'nb_data': 120, 'temperature': 20.2})
+        yield from self.message_handler.save({'date': datetime(2015, 5, 29, 12, 10, 0, tzinfo=timezone.utc), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
+        yield from self.message_handler.save({'date': datetime(2015, 5, 30, 12, 20, 0, tzinfo=timezone.utc), 'watt': 1000, 'minutes': 180, 'nb_data': 120, 'temperature': 20.2})
 
-        response = yield from aiohttp.request('GET', 'http://127.0.0.1:8080/current_cost')
+        response = yield from aiohttp.request('GET', 'http://127.0.0.1:8080/power/history')
         json_response = yield from response.json()
 
-        self.assertEqual('2015-05-28T12:00:00', json_response['start'])
-        self.assertEqual(10 * 60 * 1000, int(json_response['interval']))
         self.assertEqual(3, len(json_response['data']))
-        self.assertEqual(123, json_response['data'][0])
-        self.assertEqual(321, json_response['data'][1])
-        self.assertEqual(246, json_response['data'][2])
+        self.assertEqual(['2015-05-28T00:00:00', 1], json_response['data'][0])
+        self.assertEqual(['2015-05-29T00:00:00', 3], json_response['data'][1])
+        self.assertEqual(['2015-05-30T00:00:00', 3], json_response['data'][2])
 
 

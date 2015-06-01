@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 import json
 import iso8601
 
@@ -7,6 +8,8 @@ class Iso8601DateEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime):
             return obj.isoformat()
+        if isinstance(obj, Decimal):
+            return float(obj)
         return json.JSONEncoder.default(self, obj)
 
 

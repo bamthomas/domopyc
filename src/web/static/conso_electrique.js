@@ -25,7 +25,8 @@ $(document).ready(function () {
             yAxis: {
                 title: {
                     text: 'puissance (kWh)'
-                }
+                },
+                min : 0
             },
             legend: {
                 enabled: false
@@ -54,16 +55,16 @@ $(document).ready(function () {
             series: [{
                 type: 'area',
                 name: 'Consommation',
-                pointInterval: jsonData.interval,
-                pointStart: Date.parse(jsonData.start),
-                data: jsonData.data
+                data: jsonData
             }]
         });
     }
 
-    $.getJSON('/current_cost', function (data) {
-        console.log(data);
-        console.log(new Date(data.start));
-        createChart(data);
+    $.getJSON('/power/history', function (data) {
+        var dataWithDates = [];
+        _(data.data).forEach(function(point) {
+            dataWithDates.push([Date.parse(point[0]), point[1]]);
+        });
+        createChart(dataWithDates);
     });
 });

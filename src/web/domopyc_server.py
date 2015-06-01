@@ -66,9 +66,9 @@ def today(request):
                                    cls=Iso8601DateEncoder).encode())
 
 @asyncio.coroutine
-def current_cost_data(request):
-    start, interval, data = yield from request.app['current_cost_service'].get_current_cost_data()
-    return web.Response(body=dumps({'start': start, 'interval': interval, 'data': data}, cls=Iso8601DateEncoder).encode(),
+def power_history(request):
+    data = yield from request.app['current_cost_service'].get_current_cost_data()
+    return web.Response(body=dumps({'data': data}, cls=Iso8601DateEncoder).encode(),
                         headers={'Content-Type': 'application/json'})
 
 @asyncio.coroutine
@@ -99,7 +99,7 @@ def init(aio_loop):
     app.router.add_route('GET', '/today', today)
     app.router.add_route('GET', '/data_since/{seconds}', livedata)
     app.router.add_route('GET', '/menu/{page}', menu_item)
-    app.router.add_route('GET', '/current_cost', current_cost_data)
+    app.router.add_route('GET', '/power/history', power_history)
 
     redis_conn = yield from create_redis_connection()
 
