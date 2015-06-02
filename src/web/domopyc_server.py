@@ -72,6 +72,18 @@ def power_history(request):
                         headers={'Content-Type': 'application/json'})
 
 @asyncio.coroutine
+def power_by_day(request):
+    ts = int(request.match_info['timestamp'])
+    return web.Response(body=dumps({'data': []}, cls=Iso8601DateEncoder).encode(),
+                        headers={'Content-Type': 'application/json'})
+
+@asyncio.coroutine
+def power_costs(request):
+    since = request.match_info['since']
+    return web.Response(body=dumps({'data': []}, cls=Iso8601DateEncoder).encode(),
+                        headers={'Content-Type': 'application/json'})
+
+@asyncio.coroutine
 def livedata(request):
     seconds = int(request.match_info['seconds'])
     return web.Response(
@@ -100,6 +112,8 @@ def init(aio_loop):
     app.router.add_route('GET', '/data_since/{seconds}', livedata)
     app.router.add_route('GET', '/menu/{page}', menu_item)
     app.router.add_route('GET', '/power/history', power_history)
+    app.router.add_route('GET', '/power/day/{timestamp}', power_by_day)
+    app.router.add_route('GET', '/power/costs/{since}', power_costs)
 
     redis_conn = yield from create_redis_connection()
 

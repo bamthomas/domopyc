@@ -9,13 +9,13 @@
 <div class="pure-g-r content">
     <p></p>
     <div align="center">
-        <button class="button-secondary pure-button" onclick="today_chart()">historique</button>
-        <button class="button-success pure-button" onclick="since(60)">par jour</button>
-        <button class="button-error pure-button" onclick="since(30)">coûts</button>
+        <button id="history" class="button-secondary pure-button">historique</button>
+        <button id="by_day" class="button-success pure-button">par jour</button>
+        <button id="costs" class="button-error pure-button">coûts</button>
     </div>
-    <a href="previous"><i class="fa fa-angle-left"></i></a>
+    <a id="#previous_day" href="#"><i class="fa fa-angle-left"></i></a>
     <div id="chart"></div>
-    <a href="next"><i class="fa fa-angle-right"></i></a>
+    <a id="#next_day" href="#"><i class="fa fa-angle-right"></i></a>
 </div>
 {% endblock %}
 

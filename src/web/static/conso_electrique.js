@@ -1,12 +1,36 @@
 $(document).ready(function () {
+    $('#history').on('click', function () {
+        $.getJSON('/power/history', function (json) {
+            var dataWithDates = [];
+            _(json.data).forEach(function (point) {
+                dataWithDates.push([Date.parse(point[0]), point[1]]);
+            });
+            createHistoryChart('#chart', dataWithDates);
+        });
+    });
+
+    $('#by_day').on('click', function () {
+        var today_at_midnight = new Date();
+        today_at_midnight.setHours(0, 0, 0, 0);
+        $.getJSON('/power/day/' + today_at_midnight.getTime()/1000, function (json) {
+            createDayChart('#chart', json);
+        });
+    });
+
+    $('#costs').on('click', function () {
+        $.getJSON('/power/costs/' + 7 * 24 * 3600, function (json) {
+            createCostChart('#chart', json);
+        });
+    });
+
     Highcharts.setOptions({
         global: {
             useUTC: false
         }
     });
 
-    function createChart(jsonData) {
-        $('#chart').highcharts({
+    function createHistoryChart(selector, jsonData) {
+        $(selector).highcharts({
             chart: {
                 zoomType: 'x'
             },
@@ -26,7 +50,7 @@ $(document).ready(function () {
                 title: {
                     text: 'puissance (kWh)'
                 },
-                min : 0
+                min: 0
             },
             legend: {
                 enabled: false
@@ -60,11 +84,11 @@ $(document).ready(function () {
         });
     }
 
-    $.getJSON('/power/history', function (data) {
-        var dataWithDates = [];
-        _(data.data).forEach(function(point) {
-            dataWithDates.push([Date.parse(point[0]), point[1]]);
-        });
-        createChart(dataWithDates);
-    });
+    function createDayChart(selector, jsonData) {
+        $(selector).highcharts({});
+    }
+
+    function createCostChart(selector, jsonData) {
+        $(selector).highcharts({});
+    }
 });
