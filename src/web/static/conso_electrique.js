@@ -1,5 +1,19 @@
+
 $(document).ready(function () {
     $('#history').on('click', function () {
+        history();
+    });
+
+    $('#by_day').on('click', function () {
+        by_day();
+    });
+
+    $('#costs').on('click', function () {
+        costs();
+    });
+
+    function history() {
+        $(".day_navigation").hide();
         $.getJSON('/power/history', function (json) {
             var dataWithDates = [];
             _(json.data).forEach(function (point) {
@@ -7,21 +21,25 @@ $(document).ready(function () {
             });
             createHistoryChart('#chart', dataWithDates);
         });
-    });
+    }
 
-    $('#by_day').on('click', function () {
+    function by_day() {
+        $(".day_navigation").show();
         var today_at_midnight = new Date();
         today_at_midnight.setHours(0, 0, 0, 0);
-        $.getJSON('/power/day/' + today_at_midnight.getTime()/1000, function (json) {
+        $.getJSON('/power/day/' + today_at_midnight.getTime() / 1000, function (json) {
             createDayChart('#chart', json);
         });
-    });
+    }
 
-    $('#costs').on('click', function () {
+
+    function costs() {
+        $(".day_navigation").hide();
         $.getJSON('/power/costs/' + 7 * 24 * 3600, function (json) {
             createCostChart('#chart', json);
         });
-    });
+    }
+
 
     Highcharts.setOptions({
         global: {
@@ -91,4 +109,6 @@ $(document).ready(function () {
     function createCostChart(selector, jsonData) {
         $(selector).highcharts({});
     }
+
+    history();
 });

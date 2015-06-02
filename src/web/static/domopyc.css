@@ -24,17 +24,19 @@
 }
 
 .power_chart_container #previous_day {
-	position: absolute;
-	top: 50%;
-	left: -30px;
-	font-size: 70px;
-	color: #888;
+    font-size: 50px;
+    color: #888;
 }
 
 .power_chart_container #next_day {
-	position: absolute;
-	top: 50%;
-	right: -30px;
-	font-size: 70px;
-	color: #888;
+    font-size: 50px;
+    color: #888;
+}
+
+.l-box {
+    padding: 1em;
+}
+
+.button-group {
+    text-align: center;
 }

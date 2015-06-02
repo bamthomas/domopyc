@@ -13,10 +13,10 @@
         <button id="by_day" class="button-success pure-button">par jour</button>
         <button id="costs" class="button-error pure-button">coûts</button>
     </div>
-    <div class="power_chart_container">
-        <a id="#previous_day" href="#"><i class="fa fa-angle-left"></i></a>
-        <div id="chart"></div>
-        <a id="#next_day" href="#"><i class="fa fa-angle-right"></i></a>
+    <div class="pure-g power_chart_container">
+        <div class="pure-u-1-24"><a id="previous_day" href="#" title="jour précédent"><i class="fa fa-angle-left day_navigation"></i></a></div>
+        <div id="chart" class="pure-u-22-24"></div>
+        <div class="pure-u-1-24 day_navigation"><a id="next_day" href="#" title="jour suivant"><i class="fa fa-angle-right day_navigation"></i></a></div>
     </div>
 </div>
 {% endblock %}
