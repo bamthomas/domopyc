@@ -22,3 +22,19 @@
 .button-secondary {
     background: rgb(66, 184, 221);
 }
+
+.power_chart_container #previous_day {
+	position: absolute;
+	top: 50%;
+	left: -30px;
+	font-size: 70px;
+	color: #888;
+}
+
+.power_chart_container #next_day {
+	position: absolute;
+	top: 50%;
+	right: -30px;
+	font-size: 70px;
+	color: #888;
+}
