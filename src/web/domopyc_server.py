@@ -67,7 +67,7 @@ def today(request):
 
 @asyncio.coroutine
 def power_history(request):
-    data = yield from request.app['current_cost_service'].get_current_cost_data()
+    data = yield from request.app['current_cost_service'].get_history()
     return web.Response(body=dumps({'data': data}, cls=Iso8601DateEncoder).encode(),
                         headers={'Content-Type': 'application/json'})
 
