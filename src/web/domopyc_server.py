@@ -3,12 +3,11 @@ import asyncio
 from datetime import datetime
 from json import loads, dumps
 
-from aiohttp import web, CIMultiDict
+from aiohttp import web
 import aiohttp_jinja2
 import aiomysql
 import asyncio_redis
 import jinja2
-
 from daq.current_cost_sensor import CURRENT_COST_KEY
 from iso8601_json import with_iso8601_date, Iso8601DateEncoder
 from subscribers.redis_toolbox import RedisTimeCappedSubscriber
@@ -74,13 +73,15 @@ def power_history(request):
 @asyncio.coroutine
 def power_by_day(request):
     ts = int(request.match_info['timestamp'])
-    return web.Response(body=dumps({'data': []}, cls=Iso8601DateEncoder).encode(),
+    data = yield from request.app['current_cost_service'].get_by_day(ts)
+    return web.Response(body=dumps({'data': data}, cls=Iso8601DateEncoder).encode(),
                         headers={'Content-Type': 'application/json'})
 
 @asyncio.coroutine
 def power_costs(request):
     since = request.match_info['since']
-    return web.Response(body=dumps({'data': []}, cls=Iso8601DateEncoder).encode(),
+    data = yield from request.app['current_cost_service'].get_costs(since)
+    return web.Response(body=dumps({'data': data}, cls=Iso8601DateEncoder).encode(),
                         headers={'Content-Type': 'application/json'})
 
 @asyncio.coroutine
