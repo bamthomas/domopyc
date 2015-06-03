@@ -1,15 +1,28 @@
 $(document).ready(function () {
+    var CURRENT_DAY = new Date();
+    CURRENT_DAY.setHours(0, 0, 0, 0);
+
+    $('#next_day').on('click', function () {
+        CURRENT_DAY = new Date(CURRENT_DAY.getTime() + 24 * 3600 * 1000);
+        by_day(CURRENT_DAY);
+    });
+    $('#previous_day').on('click', function () {
+        CURRENT_DAY = new Date(CURRENT_DAY.getTime() - 24 * 3600 * 1000);
+        by_day(CURRENT_DAY);
+    });
+
     $('#history').on('click', function () {
         history();
     });
 
     $('#by_day').on('click', function () {
-        by_day();
+        by_day(CURRENT_DAY);
     });
 
     $('#costs').on('click', function () {
         costs();
     });
+
 
     function history() {
         $(".day_navigation").hide();
@@ -22,12 +35,14 @@ $(document).ready(function () {
         });
     }
 
-    function by_day() {
+    function by_day(date) {
         $(".day_navigation").show();
-        var today_at_midnight = new Date();
-        today_at_midnight.setHours(0, 0, 0, 0);
-        $.getJSON('/power/day/' + today_at_midnight.getTime() / 1000, function (json) {
-            createDayChart('#chart', json);
+        $.getJSON('/power/day/' + date.getTime() / 1000, function (json) {
+            var dataWithDates = [];
+            _(json.data).forEach(function (point) {
+                dataWithDates.push([Date.parse(point[0]), point[1]]);
+            });
+            createDayChart('#chart', date, dataWithDates);
         });
     }
 
@@ -101,13 +116,25 @@ $(document).ready(function () {
         });
     }
 
-    function createDayChart(selector, jsonData) {
+    function createDayChart(selector, date, jsonData) {
+        var max_power = Math.max(_.map(jsonData, function (date_and_power) { return date_and_power[1]; }));
         $(selector).highcharts({
             chart: {
                 zoomType: 'x'
             },
             title: {
-                text: 'Consommation électrique du ' + jsonData[0][0]
+                text: 'Consommation électrique du ' + date.getDate() + '/' + (date.getMonth() + 1) + '/' + date.getFullYear()
+            },
+            plotOptions: {
+                areaspline: {
+                    fillColor: {
+                        linearGradient: {x1: 0, y1: 0, x2: 0, y2: 1},
+                        stops: [
+                            [0, Highcharts.getOptions().colors[0]],
+                            [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+                        ]
+                    }
+                }
             },
             xAxis: {
                 type: 'datetime',
@@ -135,12 +162,12 @@ $(document).ready(function () {
                 minorGridLineWidth: 0,
                 plotLines: [
                     {
-                        value: jsonData.seuils.max,
+                        value: max_power,
                         color: 'red',
                         dashStyle: 'shortdash',
                         width: 2,
                         label: {
-                            text: 'maximum ' + jsonData.seuils.max + 'w'
+                            text: 'maximum ' + max_power + 'w'
                         }
                     }
                 ]
@@ -172,32 +199,33 @@ $(document).ready(function () {
                 backgroundColor: '#FFFFFF'
             },
             series: [{
-                name: jsonData.BASE_name,
+                name: 'heures de base',
                 color: '#4572A7',
                 type: 'areaspline',
-                data: jsonData.BASE_data,
+                data: jsonData,
                 tooltip: {
                     valueSuffix: ' W'
                 }
-            }, {
-                name: jsonData.Temp_name,
-                data: jsonData.Temp_data,
-                color: '#910000',
-                yAxis: 1,
-                type: 'spline',
-                tooltip: {
-                    valueSuffix: '°C'
-                }
-            }, {
-                name: jsonData.JPrec_name,
-                data: jsonData.JPrec_data,
-                color: '#89A54E',
-                type: 'spline',
-                width: 1,
-                shape: 'squarepin',
-                tooltip: {
-                    valueSuffix: ' W'
-                }
+                //}, {
+                //    name: jsonData.Temp_name,
+                //    data: jsonData.Temp_data,
+                //    color: '#910000',
+                //    yAxis: 1,
+                //    type: 'spline',
+                //    tooltip: {
+                //        valueSuffix: '°C'
+                //    }
+                //}, {
+                //    name: jsonData.JPrec_name,
+                //    data: jsonData.JPrec_data,
+                //    color: '#89A54E',
+                //    type: 'spline',
+                //    width: 1,
+                //    shape: 'squarepin',
+                //    tooltip: {
+                //        valueSuffix: ' W'
+                //    }
+                //
             }]
         });
     }

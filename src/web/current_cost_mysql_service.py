@@ -1,5 +1,6 @@
 # coding=utf-8
 import asyncio
+from datetime import datetime
 
 
 class CurrentCostDatabaseReader(object):
@@ -33,7 +34,7 @@ class CurrentCostDatabaseReader(object):
     def get_by_day(self, ts):
         with (yield from self.pool) as conn:
             cur = yield from conn.cursor()
-            yield from cur.execute("SELECT timestamp, watt from current_cost where UNIX_TIMESTAMP(timestamp) >= %s "
+            yield from cur.execute("SELECT timestamp, watt, temperature from current_cost where UNIX_TIMESTAMP(timestamp) >= %s "
                                    "and UNIX_TIMESTAMP(timestamp) < %s" % (ts, ts + 3600 * 24))
             result = yield from cur.fetchall()
             yield from cur.close()
