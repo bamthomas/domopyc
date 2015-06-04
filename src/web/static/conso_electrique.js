@@ -38,11 +38,14 @@ $(document).ready(function () {
     function by_day(date) {
         $(".day_navigation").show();
         $.getJSON('/power/day/' + date.getTime() / 1000, function (json) {
-            var dataWithDates = [];
+            var powerWithDates = [];
+            var tempWithDates = [];
             _(json.data).forEach(function (point) {
-                dataWithDates.push([Date.parse(point[0]), point[1]]);
+                var point_date = Date.parse(point[0]);
+                powerWithDates.push([point_date, point[1]]);
+                tempWithDates.push([point_date, point[2]]);
             });
-            createDayChart('#chart', date, dataWithDates);
+            createDayChart('#chart', date, {"power": powerWithDates, "temperature": tempWithDates});
         });
     }
 
@@ -202,30 +205,30 @@ $(document).ready(function () {
                 name: 'heures de base',
                 color: '#4572A7',
                 type: 'areaspline',
-                data: jsonData,
+                data: jsonData.power,
                 tooltip: {
                     valueSuffix: ' W'
                 }
-                //}, {
-                //    name: jsonData.Temp_name,
-                //    data: jsonData.Temp_data,
-                //    color: '#910000',
-                //    yAxis: 1,
-                //    type: 'spline',
-                //    tooltip: {
-                //        valueSuffix: '°C'
-                //    }
-                //}, {
-                //    name: jsonData.JPrec_name,
-                //    data: jsonData.JPrec_data,
-                //    color: '#89A54E',
-                //    type: 'spline',
-                //    width: 1,
-                //    shape: 'squarepin',
-                //    tooltip: {
-                //        valueSuffix: ' W'
-                //    }
-                //
+                }, {
+                    name: 'température',
+                    data: jsonData.temperature,
+                    color: '#910000',
+                    yAxis: 1,
+                    type: 'spline',
+                    tooltip: {
+                        valueSuffix: '°C'
+                    }
+                }, {
+                    name: 'période précédente',
+                    data: [],
+                    color: '#89A54E',
+                    type: 'spline',
+                    width: 1,
+                    shape: 'squarepin',
+                    tooltip: {
+                        valueSuffix: ' W'
+                    }
+
             }]
         });
     }
