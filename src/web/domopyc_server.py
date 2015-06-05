@@ -74,7 +74,8 @@ def power_history(request):
 def power_by_day(request):
     ts = int(request.match_info['timestamp'])
     data = yield from request.app['current_cost_service'].get_by_day(ts)
-    return web.Response(body=dumps({'data': data}, cls=Iso8601DateEncoder).encode(),
+    previous_data = yield from request.app['current_cost_service'].get_by_day(ts - 3600 * 24)
+    return web.Response(body=dumps({'day_data': data, 'previous_day_data': previous_data}, cls=Iso8601DateEncoder).encode(),
                         headers={'Content-Type': 'application/json'})
 
 @asyncio.coroutine

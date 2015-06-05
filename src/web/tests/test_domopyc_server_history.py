@@ -49,18 +49,16 @@ class RedisGetDataOfDay(TestCase):
     #     self.assertEqual(123, json_response['data'][0])
 
     @async_coro
-    def test_get_current_cost_history(self):
-        yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 0, 0, tzinfo=timezone.utc), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
-        yield from self.message_handler.save({'date': datetime(2015, 5, 29, 10, 10, 0, tzinfo=timezone.utc), 'watt': 1000, 'minutes': 120, 'nb_data': 120, 'temperature': 20.2})
-        yield from self.message_handler.save({'date': datetime(2015, 5, 29, 12, 10, 0, tzinfo=timezone.utc), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
-        yield from self.message_handler.save({'date': datetime(2015, 5, 30, 12, 20, 0, tzinfo=timezone.utc), 'watt': 1000, 'minutes': 180, 'nb_data': 120, 'temperature': 20.2})
+    def test_get_current_cost_by_day_with_previous_day(self):
+        yield from self.message_handler.save({'date': datetime(2015, 5, 29, 12, 10, 0, tzinfo=timezone.utc), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.6})
+        yield from self.message_handler.save({'date': datetime(2015, 5, 30, 12, 20, 0, tzinfo=timezone.utc), 'watt': 500, 'minutes': 180, 'nb_data': 120, 'temperature': 20.2})
 
-        response = yield from aiohttp.request('GET', 'http://127.0.0.1:8080/power/history')
+        response = yield from aiohttp.request('GET', 'http://127.0.0.1:8080/power/day/%s' % int(datetime(2015, 5, 30, 0, 0).timestamp()))
         json_response = yield from response.json()
 
-        self.assertEqual(3, len(json_response['data']))
-        self.assertEqual(['2015-05-28T00:00:00', 1], json_response['data'][0])
-        self.assertEqual(['2015-05-29T00:00:00', 3], json_response['data'][1])
-        self.assertEqual(['2015-05-30T00:00:00', 3], json_response['data'][2])
+        self.assertEqual(1, len(json_response['day_data']))
+        self.assertEqual(1, len(json_response['previous_day_data']))
+        self.assertEqual(['2015-05-30T12:20:00', 500, 20.2], json_response['day_data'][0])
+        self.assertEqual(['2015-05-29T12:10:00', 1000, 20.6], json_response['previous_day_data'][0])
 
 

@@ -2,6 +2,17 @@ $(document).ready(function () {
     var CURRENT_DAY = new Date();
     CURRENT_DAY.setHours(0, 0, 0, 0);
 
+    Highcharts.setOptions({
+        lang: {
+            weekdays: ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
+            months: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+        },
+        global: {
+            useUTC: false
+        }
+    });
+
     $('#next_day').on('click', function () {
         CURRENT_DAY = new Date(CURRENT_DAY.getTime() + 24 * 3600 * 1000);
         by_day(CURRENT_DAY);
@@ -40,12 +51,20 @@ $(document).ready(function () {
         $.getJSON('/power/day/' + date.getTime() / 1000, function (json) {
             var powerWithDates = [];
             var tempWithDates = [];
-            _(json.data).forEach(function (point) {
+            _(json.day_data).forEach(function (point) {
                 var point_date = Date.parse(point[0]);
                 powerWithDates.push([point_date, point[1]]);
                 tempWithDates.push([point_date, point[2]]);
             });
-            createDayChart('#chart', date, {"power": powerWithDates, "temperature": tempWithDates});
+            var previous_day_serie = [];
+            _(json.previous_day_data).forEach(function (point) {
+                this.push([Date.parse(point[0]) + 3600 * 24 * 1000, point[1]]);
+            }, previous_day_serie);
+            createDayChart('#chart', date, {
+                "power": powerWithDates,
+                "temperature": tempWithDates,
+                "previous": previous_day_serie
+            });
         });
     }
 
@@ -57,12 +76,6 @@ $(document).ready(function () {
         });
     }
 
-
-    Highcharts.setOptions({
-        global: {
-            useUTC: false
-        }
-    });
 
     function createHistoryChart(selector, jsonData) {
         $(selector).highcharts({
@@ -114,7 +127,10 @@ $(document).ready(function () {
             series: [{
                 type: 'area',
                 name: 'Consommation',
-                data: jsonData
+                data: jsonData,
+                tooltip: {
+                    valueSuffix: ' kW'
+                }
             }]
         });
     }
@@ -209,26 +225,25 @@ $(document).ready(function () {
                 tooltip: {
                     valueSuffix: ' W'
                 }
-                }, {
-                    name: 'température',
-                    data: jsonData.temperature,
-                    color: '#910000',
-                    yAxis: 1,
-                    type: 'spline',
-                    tooltip: {
-                        valueSuffix: '°C'
-                    }
-                }, {
-                    name: 'période précédente',
-                    data: [],
-                    color: '#89A54E',
-                    type: 'spline',
-                    width: 1,
-                    shape: 'squarepin',
-                    tooltip: {
-                        valueSuffix: ' W'
-                    }
-
+            }, {
+                name: 'température',
+                data: jsonData.temperature,
+                color: '#910000',
+                yAxis: 1,
+                type: 'spline',
+                tooltip: {
+                    valueSuffix: '°C'
+                }
+            }, {
+                name: 'période précédente',
+                data: jsonData.previous,
+                color: '#89A54E',
+                type: 'spline',
+                width: 1,
+                shape: 'squarepin',
+                tooltip: {
+                    valueSuffix: ' W'
+                }
             }]
         });
     }
