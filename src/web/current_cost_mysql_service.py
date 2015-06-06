@@ -50,9 +50,6 @@ class CurrentCostDatabaseReader(object):
 
 
 def merge_full_and_empty_hours(full, empty):
-    print(full)
-    print(empty)
-
     full_hours_dict = dict(full)
     empty_hours_dict = dict(empty)
 
