@@ -1,20 +1,25 @@
 # coding=utf-8
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from json import loads, dumps
+import logging
 
 from aiohttp import web
 import aiohttp_jinja2
 import aiomysql
 import asyncio_redis
+from iso8601 import iso8601
 import jinja2
 from daq.current_cost_sensor import CURRENT_COST_KEY
 from iso8601_json import with_iso8601_date, Iso8601DateEncoder
 from subscribers.redis_toolbox import RedisTimeCappedSubscriber
+from tzlocal import get_localzone
 from web.current_cost_mysql_service import CurrentCostDatabaseReader
 
 now = datetime.now
-
+root = logging.getLogger()
+logging.basicConfig()
+root.setLevel(logging.INFO)
 
 @asyncio.coroutine
 def create_redis_connection():
@@ -72,9 +77,9 @@ def power_history(request):
 
 @asyncio.coroutine
 def power_by_day(request):
-    ts = int(request.match_info['timestamp'])
-    data = yield from request.app['current_cost_service'].get_by_day(ts)
-    previous_data = yield from request.app['current_cost_service'].get_by_day(ts - 3600 * 24)
+    iso_date = iso8601.parse_date(request.match_info['iso_date'], default_timezone=get_localzone())
+    data = yield from request.app['current_cost_service'].get_by_day(iso_date)
+    previous_data = yield from request.app['current_cost_service'].get_by_day(iso_date - timedelta(days=1))
     return web.Response(body=dumps({'day_data': data, 'previous_day_data': previous_data}, cls=Iso8601DateEncoder).encode(),
                         headers={'Content-Type': 'application/json'})
 
@@ -114,7 +119,7 @@ def init(aio_loop):
     app.router.add_route('GET', '/data_since/{seconds}', livedata)
     app.router.add_route('GET', '/menu/{page}', menu_item)
     app.router.add_route('GET', '/power/history', power_history)
-    app.router.add_route('GET', '/power/day/{timestamp}', power_by_day)
+    app.router.add_route('GET', '/power/day/{iso_date}', power_by_day)
     app.router.add_route('GET', '/power/costs/{since}', power_costs)
 
     redis_conn = yield from create_redis_connection()

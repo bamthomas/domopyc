@@ -1,6 +1,6 @@
 $(document).ready(function () {
-    var CURRENT_DAY = new Date();
-    CURRENT_DAY.setHours(0, 0, 0, 0);
+    moment.locale('fr');
+    var CURRENT_DAY = moment().hours(0).minutes(0).seconds(0).milliseconds(0);
 
     Highcharts.setOptions({
         lang: {
@@ -14,11 +14,11 @@ $(document).ready(function () {
     });
 
     $('#next_day').on('click', function () {
-        CURRENT_DAY = new Date(CURRENT_DAY.getTime() + 24 * 3600 * 1000);
+        CURRENT_DAY.add(1, 'day');
         by_day(CURRENT_DAY);
     });
     $('#previous_day').on('click', function () {
-        CURRENT_DAY = new Date(CURRENT_DAY.getTime() - 24 * 3600 * 1000);
+        CURRENT_DAY.add(-1, 'day');
         by_day(CURRENT_DAY);
     });
 
@@ -48,7 +48,7 @@ $(document).ready(function () {
 
     function by_day(date) {
         $(".day_navigation").show();
-        $.getJSON('/power/day/' + date.getTime() / 1000, function (json) {
+        $.getJSON('/power/day/' + date.format(), function (json) {
             var powerWithDates = [];
             var tempWithDates = [];
             _(json.day_data).forEach(function (point) {
@@ -142,7 +142,7 @@ $(document).ready(function () {
                 zoomType: 'x'
             },
             title: {
-                text: 'Consommation électrique du ' + date.getDate() + '/' + (date.getMonth() + 1) + '/' + date.getFullYear()
+                text: 'Consommation électrique du ' + date.format('LL')
             },
             plotOptions: {
                 areaspline: {

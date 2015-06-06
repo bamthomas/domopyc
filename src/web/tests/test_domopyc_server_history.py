@@ -50,15 +50,15 @@ class RedisGetDataOfDay(TestCase):
 
     @async_coro
     def test_get_current_cost_by_day_with_previous_day(self):
-        yield from self.message_handler.save({'date': datetime(2015, 5, 29, 12, 10, 0, tzinfo=timezone.utc), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.6})
-        yield from self.message_handler.save({'date': datetime(2015, 5, 30, 12, 20, 0, tzinfo=timezone.utc), 'watt': 500, 'minutes': 180, 'nb_data': 120, 'temperature': 20.2})
+        yield from self.message_handler.save({'date': datetime(2015, 5, 29, 12, 10, 0), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.6})
+        yield from self.message_handler.save({'date': datetime(2015, 5, 30, 23, 20, 0), 'watt': 500, 'minutes': 180, 'nb_data': 120, 'temperature': 20.2})
 
-        response = yield from aiohttp.request('GET', 'http://127.0.0.1:8080/power/day/%s' % int(datetime(2015, 5, 30, 0, 0).timestamp()))
+        response = yield from aiohttp.request('GET', 'http://127.0.0.1:8080/power/day/%s' % datetime(2015, 5, 30, 0, 0, tzinfo=timezone.utc).isoformat())
         json_response = yield from response.json()
 
         self.assertEqual(1, len(json_response['day_data']))
         self.assertEqual(1, len(json_response['previous_day_data']))
-        self.assertEqual(['2015-05-30T12:20:00', 500, 20.2], json_response['day_data'][0])
+        self.assertEqual(['2015-05-30T23:20:00', 500, 20.2], json_response['day_data'][0])
         self.assertEqual(['2015-05-29T12:10:00', 1000, 20.6], json_response['previous_day_data'][0])
 
 
