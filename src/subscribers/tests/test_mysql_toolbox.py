@@ -23,6 +23,7 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
         with (yield from self.pool) as conn:
             cur = yield from conn.cursor()
             yield from cur.execute("drop table if EXISTS current_cost")
+            yield from cur.close()
 
         redis_toolbox.now = lambda: datetime(2012, 12, 13, 14, 2, 0, tzinfo=timezone.utc)
         self.message_handler = MysqlAverageMessageHandler(self.pool)

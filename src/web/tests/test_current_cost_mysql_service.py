@@ -23,6 +23,11 @@ class GetCurrentCostData(TestCase):
             yield from cur.execute("truncate current_cost")
 
     @async_coro
+    def tearDown(self):
+        self.pool.close()
+        yield from self.pool.wait_closed()
+
+    @async_coro
     def test_get_history_three_days(self):
         yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 0, 0, tzinfo=timezone.utc), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
         yield from self.message_handler.save({'date': datetime(2015, 5, 29, 10, 10, 0, tzinfo=timezone.utc), 'watt': 1000, 'minutes': 120, 'nb_data': 120, 'temperature': 20.2})
@@ -35,3 +40,12 @@ class GetCurrentCostData(TestCase):
         self.assertEqual((datetime(2015, 5, 28, 0, 0), Decimal(1)), data[0])
         self.assertEqual((datetime(2015, 5, 29, 0, 0), Decimal(3)), data[1])
         self.assertEqual((datetime(2015, 5, 30, 0, 0), Decimal(3)), data[2])
+
+    @async_coro
+    def test_get_costs(self):
+        yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 0, 0, tzinfo=timezone.utc), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
+        yield from self.message_handler.save({'date': datetime(2015, 5, 29, 10, 10, 0, tzinfo=timezone.utc), 'watt': 1000, 'minutes': 120, 'nb_data': 120, 'temperature': 20.2})
+
+        data = yield from self.current_cost_service.get_costs(since=datetime(2015, 5, 28, 0, 0).timestamp())
+
+        self.assertEqual(2, len(data))

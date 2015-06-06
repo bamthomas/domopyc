@@ -105,10 +105,11 @@ def get_current_cost_data(redis_conn):
 
 
 @asyncio.coroutine
-def init(aio_loop):
+def init(aio_loop, mysql_pool=None):
+    mysql_pool_local = mysql_pool if mysql_pool is not None else (yield from create_mysql_pool())
     app = web.Application(loop=aio_loop)
     app['redis_connection'] = yield from create_redis_connection()
-    app['current_cost_service'] = CurrentCostDatabaseReader((yield from create_mysql_pool()))
+    app['current_cost_service'] = CurrentCostDatabaseReader(mysql_pool_local)
 
     app.router.add_static(prefix='/static', path='static')
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader('templates'))
