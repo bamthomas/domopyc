@@ -1,6 +1,5 @@
 $(document).ready(function () {
     moment.locale('fr');
-    var CURRENT_DAY = moment().hours(0).minutes(0).seconds(0).milliseconds(0);
 
     Highcharts.setOptions({
         lang: {
@@ -13,21 +12,12 @@ $(document).ready(function () {
         }
     });
 
-    $('#next_day').on('click', function () {
-        CURRENT_DAY.add(1, 'day');
-        power.by_day(CURRENT_DAY);
-    });
-    $('#previous_day').on('click', function () {
-        CURRENT_DAY.add(-1, 'day');
-        power.by_day(CURRENT_DAY);
-    });
-
     $('#history').on('click', function () {
         power.history();
     });
 
     $('#by_day').on('click', function () {
-        power.by_day(CURRENT_DAY);
+        power.day();
     });
 
     $('#costs').on('click', function () {
@@ -37,6 +27,8 @@ $(document).ready(function () {
 });
 
 var power = (function () {
+    var CURRENT_DAY = moment().hours(0).minutes(0).seconds(0).milliseconds(0);
+
     function createCostChart(selector, jsonData, config) {
         $(selector).highcharts({
                 chart: {
@@ -172,6 +164,17 @@ var power = (function () {
                         }
                     },
                     threshold: null
+                },
+                series: {
+                    cursor: 'pointer',
+                    point: {
+                        events: {
+                            click: function () {
+                                CURRENT_DAY = moment(this.x);
+                                power.by_day(CURRENT_DAY);
+                            }
+                        }
+                    }
                 }
             },
             series: [{
@@ -309,6 +312,14 @@ var power = (function () {
     }
 
     return {
+        next_day: function () {
+            CURRENT_DAY.add(1, 'day');
+            this.by_day(CURRENT_DAY);
+        },
+        previous_day: function () {
+            CURRENT_DAY.add(-1, 'day');
+            this.by_day(CURRENT_DAY);
+        },
         history: function () {
             $(".day_navigation").hide();
             $(".cost_period").hide();
@@ -319,6 +330,9 @@ var power = (function () {
                 });
                 createHistoryChart('#chart', dataWithDates);
             });
+        },
+        day: function() {
+            this.by_day(CURRENT_DAY);
         },
         by_day: function (date) {
             $(".day_navigation").show();
