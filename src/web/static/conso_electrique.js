@@ -34,9 +34,9 @@ $(document).ready(function () {
         costs();
     });
 
-
     function history() {
         $(".day_navigation").hide();
+        $(".cost_period").hide();
         $.getJSON('/power/history', function (json) {
             var dataWithDates = [];
             _(json.data).forEach(function (point) {
@@ -48,6 +48,7 @@ $(document).ready(function () {
 
     function by_day(date) {
         $(".day_navigation").show();
+        $(".cost_period").hide();
         $.getJSON('/power/day/' + date.format(), function (json) {
             var powerWithDates = [];
             var tempWithDates = [];
@@ -71,6 +72,7 @@ $(document).ready(function () {
 
     function costs() {
         $(".day_navigation").hide();
+        $(".cost_period").show();
         $.getJSON('/power/costs/' + moment().add(-7, 'days').format(), function (json) {
             createCostChart('#chart', json);
         });
