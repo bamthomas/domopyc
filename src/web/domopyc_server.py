@@ -1,6 +1,6 @@
 # coding=utf-8
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from json import loads, dumps
 import logging
 
@@ -109,7 +109,7 @@ def init(aio_loop, mysql_pool=None):
     mysql_pool_local = mysql_pool if mysql_pool is not None else (yield from create_mysql_pool())
     app = web.Application(loop=aio_loop)
     app['redis_connection'] = yield from create_redis_connection()
-    app['current_cost_service'] = CurrentCostDatabaseReader(mysql_pool_local)
+    app['current_cost_service'] = CurrentCostDatabaseReader(mysql_pool_local, full_hours_start=time(23), full_hours_stop=time(7))
 
     app.router.add_static(prefix='/static', path='static')
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader('templates'))

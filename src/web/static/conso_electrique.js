@@ -15,69 +15,140 @@ $(document).ready(function () {
 
     $('#next_day').on('click', function () {
         CURRENT_DAY.add(1, 'day');
-        by_day(CURRENT_DAY);
+        power.by_day(CURRENT_DAY);
     });
     $('#previous_day').on('click', function () {
         CURRENT_DAY.add(-1, 'day');
-        by_day(CURRENT_DAY);
+        power.by_day(CURRENT_DAY);
     });
 
     $('#history').on('click', function () {
-        history();
+        power.history();
     });
 
     $('#by_day').on('click', function () {
-        by_day(CURRENT_DAY);
+        power.by_day(CURRENT_DAY);
     });
 
     $('#costs').on('click', function () {
-        costs();
+        power.costs(moment.duration(8, 'days'));
     });
+    power.history();
+});
 
-    function history() {
-        $(".day_navigation").hide();
-        $(".cost_period").hide();
-        $.getJSON('/power/history', function (json) {
-            var dataWithDates = [];
-            _(json.data).forEach(function (point) {
-                dataWithDates.push([Date.parse(point[0]), point[1]]);
-            });
-            createHistoryChart('#chart', dataWithDates);
-        });
+var power = (function () {
+     function createCostChart(selector, jsonData) {
+        $(selector).highcharts({
+                chart: {
+                    defaultSeriesType: 'column',
+                },
+                title: {
+                    text: 'Consommation électrique'
+                },
+                xAxis: [
+                    {
+                        categories: data.categories
+                    }
+                ],
+                yAxis: {
+                    title: {
+                        text: 'kWh'
+                    },
+                    min: 0,
+                    minorGridLineWidth: 0,
+                    labels: {formatter: function () { return this.value + ' kWh' }}
+                },
+                tooltip: {
+                    formatter: function () {
+                        totalBASE = data.prix.BASE * ((this.series.name == 'Heures de Base') ? this.y : this.point.stackTotal - this.y);
+                        totalHP = data.prix.HP * ((this.series.name == 'Heures Pleines') ? this.y : this.point.stackTotal - this.y);
+                        totalHC = data.prix.HC * ((this.series.name == 'Heures Creuses') ? this.y : this.point.stackTotal - this.y);
+                        totalprix = Highcharts.numberFormat(( totalBASE + totalHP + totalHC + data.prix.abonnement ), 2);
+                        tooltip = '<b> ' + this.x + ' <b><br /><b>' + this.series.name + ' ' + Highcharts.numberFormat(this.y, 2) + ' kWh<b><br />';
+                        //tooltip += 'BASE : '+ Highcharts.numberFormat(totalBASE,2) + ' Euro / HP : '+ Highcharts.numberFormat(totalHP,2) + ' Euro / HC : ' + Highcharts.numberFormat(totalHC,2) + ' Euro<br />';
+                        if (data.tarif_type != "HCHP") {
+                            tooltip += 'BASE : ' + Highcharts.numberFormat(totalBASE, 2) + ' Euro <br />';
+                        } else {
+                            tooltip += 'HP : ' + Highcharts.numberFormat(totalHP, 2) + ' Euro / HC : ' + Highcharts.numberFormat(totalHC, 2) + ' Euro<br />';
+                        }
+                        tooltip += 'Abonnement sur la période : ' + Highcharts.numberFormat(data.prix.abonnement, 2) + ' Euro<br />';
+                        tooltip += '<b> Total: ' + totalprix + ' Euro<b>';
+                        return tooltip;
+                    }
+                },
+                plotOptions: {
+                    column: {
+                        stacking: 'normal'
+                    }
+                },
+                series: [
+                    {
+                        name: 'Heures Pleines',
+                        data: [],
+                        dataLabels: {
+                            enabled: true,
+                            color: '#FFFFFF',
+                            y: 13,
+                            formatter: function () {
+                                return this.y;
+                            },
+                            style: {
+                                font: 'normal 13px Verdana, sans-serif'
+                            }
+                        },
+                        type: 'column',
+                        showInLegend: ((data.tarif_type == "HCHP") ? true : false)
+                    },
+                    {
+                        name: 'Heures Creuses',
+                        data: [],
+                        dataLabels: {
+                            enabled: true,
+                            color: '#FFFFFF',
+                            y: 13,
+                            formatter: function () {
+                                return this.y;
+                            },
+                            style: {
+                                font: 'normal 13px Verdana, sans-serif'
+                            }
+                        },
+                        type: 'column',
+                        showInLegend: ((data.tarif_type == "HCHP") ? true : false)
+                    },
+                    {
+                        name: 'Heures de base',
+                        data: data.BASE_data,
+                        events: {
+                            click: function (e) {
+                                var newdate = new Date();
+                                newdate.setTime(data.debut);
+                                newdate.setDate(newdate.getDate() + e.point.x);
+                            }
+                        },
+                        dataLabels: {
+                            enabled: true,
+                            color: '#FFFFFF',
+                            y: 13,
+                            formatter: function () {
+                                return this.y;
+                            },
+                            style: {
+                                font: 'normal 13px Verdana, sans-serif'
+                            }
+                        },
+                        type: 'column',
+                        showInLegend: ((data.tarif_type == "HCHP") ? false : true)
+                    }
+                ],
+                navigation: {
+                    menuItemStyle: {
+                        fontSize: '10px'
+                    }
+                }
+            }
+        );
     }
-
-    function by_day(date) {
-        $(".day_navigation").show();
-        $(".cost_period").hide();
-        $.getJSON('/power/day/' + date.format(), function (json) {
-            var powerWithDates = [];
-            var tempWithDates = [];
-            _(json.day_data).forEach(function (point) {
-                var point_date = Date.parse(point[0]);
-                powerWithDates.push([point_date, point[1]]);
-                tempWithDates.push([point_date, point[2]]);
-            });
-            var previous_day_serie = [];
-            _(json.previous_day_data).forEach(function (point) {
-                this.push([Date.parse(point[0]) + 3600 * 24 * 1000, point[1]]);
-            }, previous_day_serie);
-            createDayChart('#chart', date, {
-                "power": powerWithDates,
-                "temperature": tempWithDates,
-                "previous": previous_day_serie
-            });
-        });
-    }
-
-
-    function costs() {
-        $(".day_navigation").hide();
-        $(".cost_period").show();
-        $.getJSON('/power/costs/' + moment().add(-7, 'days').format(), function (json) {
-            createCostChart('#chart', json);
-        });
-    }
-
 
     function createHistoryChart(selector, jsonData) {
         $(selector).highcharts({
@@ -260,118 +331,46 @@ $(document).ready(function () {
         });
     }
 
-    function createCostChart(selector, jsonData) {
-        $(selector).highcharts({
-                chart: {
-                    defaultSeriesType: 'column',
-                },
-                title: {
-                    text: 'Consommation électrique'
-                },
-                xAxis: [
-                    {
-                        categories: data.categories
-                    }
-                ],
-                yAxis: {
-                    title: {
-                        text: 'kWh'
-                    },
-                    min: 0,
-                    minorGridLineWidth: 0,
-                    labels: {formatter: function () { return this.value + ' kWh' }}
-                },
-                tooltip: {
-                    formatter: function () {
-                        totalBASE = data.prix.BASE * ((this.series.name == 'Heures de Base') ? this.y : this.point.stackTotal - this.y);
-                        totalHP = data.prix.HP * ((this.series.name == 'Heures Pleines') ? this.y : this.point.stackTotal - this.y);
-                        totalHC = data.prix.HC * ((this.series.name == 'Heures Creuses') ? this.y : this.point.stackTotal - this.y);
-                        totalprix = Highcharts.numberFormat(( totalBASE + totalHP + totalHC + data.prix.abonnement ), 2);
-                        tooltip = '<b> ' + this.x + ' <b><br /><b>' + this.series.name + ' ' + Highcharts.numberFormat(this.y, 2) + ' kWh<b><br />';
-                        //tooltip += 'BASE : '+ Highcharts.numberFormat(totalBASE,2) + ' Euro / HP : '+ Highcharts.numberFormat(totalHP,2) + ' Euro / HC : ' + Highcharts.numberFormat(totalHC,2) + ' Euro<br />';
-                        if (data.tarif_type != "HCHP") {
-                            tooltip += 'BASE : ' + Highcharts.numberFormat(totalBASE, 2) + ' Euro <br />';
-                        } else {
-                            tooltip += 'HP : ' + Highcharts.numberFormat(totalHP, 2) + ' Euro / HC : ' + Highcharts.numberFormat(totalHC, 2) + ' Euro<br />';
-                        }
-                        tooltip += 'Abonnement sur la période : ' + Highcharts.numberFormat(data.prix.abonnement, 2) + ' Euro<br />';
-                        tooltip += '<b> Total: ' + totalprix + ' Euro<b>';
-                        return tooltip;
-                    }
-                },
-                plotOptions: {
-                    column: {
-                        stacking: 'normal'
-                    }
-                },
-                series: [
-                    {
-                        name: 'Heures Pleines',
-                        data: [],
-                        dataLabels: {
-                            enabled: true,
-                            color: '#FFFFFF',
-                            y: 13,
-                            formatter: function () {
-                                return this.y;
-                            },
-                            style: {
-                                font: 'normal 13px Verdana, sans-serif'
-                            }
-                        },
-                        type: 'column',
-                        showInLegend: ((data.tarif_type == "HCHP") ? true : false)
-                    },
-                    {
-                        name: 'Heures Creuses',
-                        data: [],
-                        dataLabels: {
-                            enabled: true,
-                            color: '#FFFFFF',
-                            y: 13,
-                            formatter: function () {
-                                return this.y;
-                            },
-                            style: {
-                                font: 'normal 13px Verdana, sans-serif'
-                            }
-                        },
-                        type: 'column',
-                        showInLegend: ((data.tarif_type == "HCHP") ? true : false)
-                    },
-                    {
-                        name: 'Heures de base',
-                        data: data.BASE_data,
-                        events: {
-                            click: function (e) {
-                                var newdate = new Date();
-                                newdate.setTime(data.debut);
-                                newdate.setDate(newdate.getDate() + e.point.x);
-                            }
-                        },
-                        dataLabels: {
-                            enabled: true,
-                            color: '#FFFFFF',
-                            y: 13,
-                            formatter: function () {
-                                return this.y;
-                            },
-                            style: {
-                                font: 'normal 13px Verdana, sans-serif'
-                            }
-                        },
-                        type: 'column',
-                        showInLegend: ((data.tarif_type == "HCHP") ? false : true)
-                    }
-                ],
-                navigation: {
-                    menuItemStyle: {
-                        fontSize: '10px'
-                    }
-                }
-            }
-        );
-    }
-
-    history();
-});
+    return {
+        history: function () {
+            $(".day_navigation").hide();
+            $(".cost_period").hide();
+            $.getJSON('/power/history', function (json) {
+                var dataWithDates = [];
+                _(json.data).forEach(function (point) {
+                    dataWithDates.push([Date.parse(point[0]), point[1]]);
+                });
+                createHistoryChart('#chart', dataWithDates);
+            });
+        },
+        by_day: function (date) {
+            $(".day_navigation").show();
+            $(".cost_period").hide();
+            $.getJSON('/power/day/' + date.format(), function (json) {
+                var powerWithDates = [];
+                var tempWithDates = [];
+                _(json.day_data).forEach(function (point) {
+                    var point_date = Date.parse(point[0]);
+                    powerWithDates.push([point_date, point[1]]);
+                    tempWithDates.push([point_date, point[2]]);
+                });
+                var previous_day_serie = [];
+                _(json.previous_day_data).forEach(function (point) {
+                    this.push([Date.parse(point[0]) + 3600 * 24 * 1000, point[1]]);
+                }, previous_day_serie);
+                createDayChart('#chart', date, {
+                    "power": powerWithDates,
+                    "temperature": tempWithDates,
+                    "previous": previous_day_serie
+                });
+            });
+        },
+        costs: function (duration) {
+            $(".day_navigation").hide();
+            $(".cost_period").show();
+            $.getJSON('/power/costs/' + moment().add(-duration).format(), function (json) {
+                createCostChart('#chart', json);
+            });
+        }
+    };
+})();

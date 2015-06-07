@@ -20,9 +20,9 @@
 
     </div>
     <div class="cost_period" align="center">
-        <button class="button-success pure-button">8 jours</button>
-        <button class="button-secondary pure-button">10 semaines</button>
-        <button class="button-warning pure-button">13 mois</button>
+        <button class="button-success pure-button" onclick="power.costs(moment.duration(8, 'days'));">8 jours</button>
+        <button class="button-secondary pure-button" onclick="power.costs(moment.duration(10, 'weeks'));">10 semaines</button>
+        <button class="button-warning pure-button" onclick="power.costs(moment.duration(13, 'months'));">13 mois</button>
     </div>
 </div>
 {% endblock %}
