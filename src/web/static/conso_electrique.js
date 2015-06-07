@@ -37,7 +37,7 @@ $(document).ready(function () {
 });
 
 var power = (function () {
-     function createCostChart(selector, jsonData) {
+     function createCostChart(selector, jsonData, config) {
         $(selector).highcharts({
                 chart: {
                     defaultSeriesType: 'column',
@@ -47,7 +47,7 @@ var power = (function () {
                 },
                 xAxis: [
                     {
-                        categories: data.categories
+                        categories: jsonData.categories
                     }
                 ],
                 yAxis: {
@@ -60,18 +60,18 @@ var power = (function () {
                 },
                 tooltip: {
                     formatter: function () {
-                        totalBASE = data.prix.BASE * ((this.series.name == 'Heures de Base') ? this.y : this.point.stackTotal - this.y);
-                        totalHP = data.prix.HP * ((this.series.name == 'Heures Pleines') ? this.y : this.point.stackTotal - this.y);
-                        totalHC = data.prix.HC * ((this.series.name == 'Heures Creuses') ? this.y : this.point.stackTotal - this.y);
-                        totalprix = Highcharts.numberFormat(( totalBASE + totalHP + totalHC + data.prix.abonnement ), 2);
-                        tooltip = '<b> ' + this.x + ' <b><br /><b>' + this.series.name + ' ' + Highcharts.numberFormat(this.y, 2) + ' kWh<b><br />';
+                        var totalBASE = config.base_price * ((this.series.name == 'Heures de Base') ? this.y : this.point.stackTotal - this.y);
+                        var totalHP = config.full_hours_price * ((this.series.name == 'Heures Pleines') ? this.y : this.point.stackTotal - this.y);
+                        var totalHC = config.empty_hours_price * ((this.series.name == 'Heures Creuses') ? this.y : this.point.stackTotal - this.y);
+                        var totalprix = Highcharts.numberFormat(( totalBASE + totalHP + totalHC + config.subscription_fee ), 2);
+                        var tooltip = '<b> ' + this.x + ' <b><br /><b>' + this.series.name + ' ' + Highcharts.numberFormat(this.y, 2) + ' kWh<b><br />';
                         //tooltip += 'BASE : '+ Highcharts.numberFormat(totalBASE,2) + ' Euro / HP : '+ Highcharts.numberFormat(totalHP,2) + ' Euro / HC : ' + Highcharts.numberFormat(totalHC,2) + ' Euro<br />';
-                        if (data.tarif_type != "HCHP") {
-                            tooltip += 'BASE : ' + Highcharts.numberFormat(totalBASE, 2) + ' Euro <br />';
-                        } else {
+                        if (config.subscription_type === "hphc") {
                             tooltip += 'HP : ' + Highcharts.numberFormat(totalHP, 2) + ' Euro / HC : ' + Highcharts.numberFormat(totalHC, 2) + ' Euro<br />';
+                        } else {
+                            tooltip += 'BASE : ' + Highcharts.numberFormat(totalBASE, 2) + ' Euro <br />';
                         }
-                        tooltip += 'Abonnement sur la période : ' + Highcharts.numberFormat(data.prix.abonnement, 2) + ' Euro<br />';
+                        tooltip += 'Abonnement sur la période : ' + Highcharts.numberFormat(config.subscription_fee, 2) + ' Euro<br />';
                         tooltip += '<b> Total: ' + totalprix + ' Euro<b>';
                         return tooltip;
                     }
@@ -84,7 +84,7 @@ var power = (function () {
                 series: [
                     {
                         name: 'Heures Pleines',
-                        data: [],
+                        data: jsonData.full_hours,
                         dataLabels: {
                             enabled: true,
                             color: '#FFFFFF',
@@ -97,11 +97,11 @@ var power = (function () {
                             }
                         },
                         type: 'column',
-                        showInLegend: ((data.tarif_type == "HCHP") ? true : false)
+                        showInLegend: true
                     },
                     {
                         name: 'Heures Creuses',
-                        data: [],
+                        data: jsonData.empty_hours,
                         dataLabels: {
                             enabled: true,
                             color: '#FFFFFF',
@@ -114,11 +114,11 @@ var power = (function () {
                             }
                         },
                         type: 'column',
-                        showInLegend: ((data.tarif_type == "HCHP") ? true : false)
+                        showInLegend: true
                     },
                     {
                         name: 'Heures de base',
-                        data: data.BASE_data,
+                        data: [],
                         events: {
                             click: function (e) {
                                 var newdate = new Date();
@@ -138,7 +138,7 @@ var power = (function () {
                             }
                         },
                         type: 'column',
-                        showInLegend: ((data.tarif_type == "HCHP") ? false : true)
+                        showInLegend: false
                     }
                 ],
                 navigation: {
@@ -369,7 +369,11 @@ var power = (function () {
             $(".day_navigation").hide();
             $(".cost_period").show();
             $.getJSON('/power/costs/' + moment().add(-duration).format(), function (json) {
-                createCostChart('#chart', json);
+                var categories = _(json.data).map(function(item) {return item[0]; });
+                var full_hours = _(json.data).map(function(item) {return item[1][0]; });
+                var empty_hours = _(json.data).map(function(item) {return item[1][1]; });
+                var config = {'base_price': 0, 'full_hours_price': 0.1353, 'empty_hours_price': 0.0926, 'subscription_fee': 262.08, 'subscription_type': 'hphc'};
+                createCostChart('#chart', {'categories': categories, 'full_hours': full_hours, 'empty_hours': empty_hours}, config);
             });
         }
     };
