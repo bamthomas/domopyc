@@ -2,6 +2,20 @@
 import asyncio
 from datetime import datetime, timedelta, time
 from decimal import Decimal
+from tzlocal import get_localzone
+
+
+def now():
+    return datetime.now(tz=get_localzone())
+
+
+def get_sql_period_function(since):
+    if now() - since > timedelta(weeks=11):
+        return 'MONTH'
+    if now() - since >= timedelta(days=15):
+        return 'WEEK'
+    if now() - since < timedelta(days=15):
+        return 'DAYOFYEAR'
 
 
 class CurrentCostDatabaseReader(object):
@@ -33,20 +47,24 @@ class CurrentCostDatabaseReader(object):
 
     @asyncio.coroutine
     def get_costs(self, since):
+        period_func = get_sql_period_function(since)
         with (yield from self.pool) as conn:
             cur = yield from conn.cursor()
             yield from cur.execute("SELECT timestamp(date(timestamp), MAKETIME(0,0,0)) AS day, "
-                                   "sum(watt * minutes) / (60 * 1000) FROM current_cost "
+                                   "sum(watt * minutes) / (60 * 1000), {period_func}(timestamp) as period FROM current_cost "
                                    "WHERE timestamp >= %s AND TIME(timestamp) >= %s and TIME(timestamp) <= %s "
-                                   "GROUP BY date(timestamp) ORDER BY day ", (since, self.full_hours_start, self.full_hours_stop ))
+                                   "GROUP BY period ORDER BY day ".format(period_func=period_func), (since, self.full_hours_start, self.full_hours_stop))
             full = yield from cur.fetchall()
             yield from cur.execute("SELECT timestamp(date(timestamp), MAKETIME(0,0,0)) AS day, "
-                                   "sum(watt * minutes) / (60 * 1000) FROM current_cost "
+                                   "sum(watt * minutes) / (60 * 1000), {period_func}(timestamp) as period FROM current_cost "
                                    "WHERE timestamp >= %s AND (TIME(timestamp) < %s OR TIME(timestamp) > %s) "
-                                   "GROUP BY date(timestamp) ORDER BY day ", (since, self.full_hours_start, self.full_hours_stop))
+                                   "GROUP BY period ORDER BY day ".format(period_func=period_func), (since, self.full_hours_start, self.full_hours_stop))
             empty = yield from cur.fetchall()
             yield from cur.close()
-            return merge_full_and_empty_hours(full, empty)
+
+            def keep_two_first_fields(iterable):
+                return map(lambda t: t[0:2], iterable)
+            return merge_full_and_empty_hours(keep_two_first_fields(full), keep_two_first_fields(empty))
 
 
 def merge_full_and_empty_hours(full, empty):

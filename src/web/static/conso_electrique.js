@@ -37,42 +37,39 @@ $(document).ready(function () {
 });
 
 var power = (function () {
-     function createCostChart(selector, jsonData, config) {
+    function createCostChart(selector, jsonData, config) {
         $(selector).highcharts({
                 chart: {
-                    defaultSeriesType: 'column',
+                    defaultSeriesType: 'column'
                 },
                 title: {
                     text: 'Consommation électrique'
                 },
-                xAxis: [
-                    {
-                        categories: jsonData.categories
-                    }
-                ],
+                xAxis: {
+                    categories: jsonData.categories
+                },
                 yAxis: {
                     title: {
                         text: 'kWh'
                     },
                     min: 0,
                     minorGridLineWidth: 0,
-                    labels: {formatter: function () { return this.value + ' kWh' }}
+                    labels: {formatter: function () { return this.value + ' kWh' }},
+
                 },
                 tooltip: {
                     formatter: function () {
                         var totalBASE = config.base_price * ((this.series.name == 'Heures de Base') ? this.y : this.point.stackTotal - this.y);
                         var totalHP = config.full_hours_price * ((this.series.name == 'Heures Pleines') ? this.y : this.point.stackTotal - this.y);
                         var totalHC = config.empty_hours_price * ((this.series.name == 'Heures Creuses') ? this.y : this.point.stackTotal - this.y);
-                        var totalprix = Highcharts.numberFormat(( totalBASE + totalHP + totalHC + config.subscription_fee ), 2);
+                        var totalprix = Highcharts.numberFormat(( totalBASE + totalHP + totalHC), 2);
                         var tooltip = '<b> ' + this.x + ' <b><br /><b>' + this.series.name + ' ' + Highcharts.numberFormat(this.y, 2) + ' kWh<b><br />';
-                        //tooltip += 'BASE : '+ Highcharts.numberFormat(totalBASE,2) + ' Euro / HP : '+ Highcharts.numberFormat(totalHP,2) + ' Euro / HC : ' + Highcharts.numberFormat(totalHC,2) + ' Euro<br />';
                         if (config.subscription_type === "hphc") {
-                            tooltip += 'HP : ' + Highcharts.numberFormat(totalHP, 2) + ' Euro / HC : ' + Highcharts.numberFormat(totalHC, 2) + ' Euro<br />';
+                            tooltip += 'HP : ' + Highcharts.numberFormat(totalHP, 2) + ' € / HC : ' + Highcharts.numberFormat(totalHC, 2) + ' €<br />';
                         } else {
-                            tooltip += 'BASE : ' + Highcharts.numberFormat(totalBASE, 2) + ' Euro <br />';
+                            tooltip += 'BASE : ' + Highcharts.numberFormat(totalBASE, 2) + ' € <br />';
                         }
-                        tooltip += 'Abonnement sur la période : ' + Highcharts.numberFormat(config.subscription_fee, 2) + ' Euro<br />';
-                        tooltip += '<b> Total: ' + totalprix + ' Euro<b>';
+                        tooltip += '<b> Total: ' + totalprix + ' €<b>';
                         return tooltip;
                     }
                 },
@@ -88,13 +85,7 @@ var power = (function () {
                         dataLabels: {
                             enabled: true,
                             color: '#FFFFFF',
-                            y: 13,
-                            formatter: function () {
-                                return this.y;
-                            },
-                            style: {
-                                font: 'normal 13px Verdana, sans-serif'
-                            }
+                            format: '{y:,.0f}'
                         },
                         type: 'column',
                         showInLegend: true
@@ -105,13 +96,7 @@ var power = (function () {
                         dataLabels: {
                             enabled: true,
                             color: '#FFFFFF',
-                            y: 13,
-                            formatter: function () {
-                                return this.y;
-                            },
-                            style: {
-                                font: 'normal 13px Verdana, sans-serif'
-                            }
+                            format: '{y:,.0f}'
                         },
                         type: 'column',
                         showInLegend: true
@@ -119,23 +104,10 @@ var power = (function () {
                     {
                         name: 'Heures de base',
                         data: [],
-                        events: {
-                            click: function (e) {
-                                var newdate = new Date();
-                                newdate.setTime(data.debut);
-                                newdate.setDate(newdate.getDate() + e.point.x);
-                            }
-                        },
                         dataLabels: {
                             enabled: true,
                             color: '#FFFFFF',
-                            y: 13,
-                            formatter: function () {
-                                return this.y;
-                            },
-                            style: {
-                                font: 'normal 13px Verdana, sans-serif'
-                            }
+                            format: '{y:,.0f}'
                         },
                         type: 'column',
                         showInLegend: false
@@ -234,13 +206,7 @@ var power = (function () {
                 }
             },
             xAxis: {
-                type: 'datetime',
-                dateTimeLabelFormats: {
-                    hour: '%H:%M',
-                    day: '%H:%M',
-                    week: '%H:%M',
-                    month: '%H:%M'
-                }
+                type: 'datetime'
             },
             yAxis: [{
                 title: {
@@ -331,6 +297,17 @@ var power = (function () {
         });
     }
 
+    function get_time_format(moment_duration) {
+        // iso than current_cost_mysql.get_sql_period_function()
+        if (moment_duration >= moment.duration(11, 'weeks')) {
+            return 'MMM';
+        }
+        if (moment_duration >= moment.duration(15, 'days')) {
+            return 'W';
+        }
+        else return 'L';
+    }
+
     return {
         history: function () {
             $(".day_navigation").hide();
@@ -369,11 +346,21 @@ var power = (function () {
             $(".day_navigation").hide();
             $(".cost_period").show();
             $.getJSON('/power/costs/' + moment().add(-duration).format(), function (json) {
-                var categories = _(json.data).map(function(item) {return item[0]; });
-                var full_hours = _(json.data).map(function(item) {return item[1][0]; });
-                var empty_hours = _(json.data).map(function(item) {return item[1][1]; });
-                var config = {'base_price': 0, 'full_hours_price': 0.1353, 'empty_hours_price': 0.0926, 'subscription_fee': 262.08, 'subscription_type': 'hphc'};
-                createCostChart('#chart', {'categories': categories, 'full_hours': full_hours, 'empty_hours': empty_hours}, config);
+                var categories = _(json.data).map(function (item) {return moment(item[0]).format(get_time_format(duration)); });
+                var full_hours = _(json.data).map(function (item) {return item[1][0]; });
+                var empty_hours = _(json.data).map(function (item) {return item[1][1]; });
+                var config = {
+                    'base_price': 0,
+                    'full_hours_price': 0.1353,
+                    'empty_hours_price': 0.0926,
+                    'subscription_fee': 262,
+                    'subscription_type': 'hphc'
+                };
+                createCostChart('#chart', {
+                    'categories': categories,
+                    'full_hours': full_hours,
+                    'empty_hours': empty_hours
+                }, config);
             });
         }
     };

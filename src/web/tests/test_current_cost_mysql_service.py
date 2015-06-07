@@ -1,11 +1,13 @@
 import asyncio
-from datetime import datetime, timezone, time
+from datetime import datetime, timezone, time, timedelta
 from decimal import Decimal
 from unittest import TestCase
 
 import aiomysql
 from subscribers.mysql_toolbox import MysqlAverageMessageHandler
 from test_utils.ut_async import async_coro
+from tzlocal import get_localzone
+from web import current_cost_mysql_service
 from web.current_cost_mysql_service import CurrentCostDatabaseReader, merge_full_and_empty_hours
 
 
@@ -18,6 +20,7 @@ class GetCurrentCostData(TestCase):
 
         self.message_handler = MysqlAverageMessageHandler(self.pool)
         self.current_cost_service = CurrentCostDatabaseReader(self.pool, time(8, 0), time(22, 0))
+        current_cost_mysql_service.now = lambda: datetime(2015, 6, 1, 12, 0, 0, tzinfo=get_localzone())
         with (yield from self.pool) as conn:
             cur = yield from conn.cursor()
             yield from cur.execute("truncate current_cost")
@@ -46,7 +49,7 @@ class GetCurrentCostData(TestCase):
         yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 0, 0), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
         yield from self.message_handler.save({'date': datetime(2015, 5, 30, 7, 0, 0), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
 
-        data = yield from self.current_cost_service.get_costs(since=datetime(2015, 5, 30))
+        data = yield from self.current_cost_service.get_costs(since=datetime(2015, 5, 30, tzinfo=get_localzone()))
 
         self.assertTupleEqual((datetime(2015, 5, 30), (Decimal(0.0), Decimal(1.0))), data[0])
 
@@ -56,7 +59,7 @@ class GetCurrentCostData(TestCase):
         yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 0, 0), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
         yield from self.message_handler.save({'date': datetime(2015, 5, 28, 7, 0, 0), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
 
-        data = yield from current_cost_service_without_discount_hours.get_costs(since=datetime(2015, 5, 28, 0, 0))
+        data = yield from current_cost_service_without_discount_hours.get_costs(since=datetime(2015, 5, 28, tzinfo=get_localzone()))
 
         self.assertEqual(1, len(data))
         self.assertEqual((datetime(2015, 5, 28), (Decimal(2.0), Decimal(0.0))), data[0])
@@ -67,10 +70,36 @@ class GetCurrentCostData(TestCase):
         yield from self.message_handler.save({'date': datetime(2015, 5, 28, 7, 0, 0), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
         yield from self.message_handler.save({'date': datetime(2015, 5, 28, 23, 0, 0), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
 
-        data = yield from self.current_cost_service.get_costs(since=datetime(2015, 5, 28, 0, 0).timestamp())
+        data = yield from self.current_cost_service.get_costs(since=datetime(2015, 5, 28, 0, 0, tzinfo=get_localzone()))
 
         self.assertEqual(1, len(data))
         self.assertEqual((datetime(2015, 5, 28), (Decimal(1.0), Decimal(2.0))), data[0])
+
+    @async_coro
+    def test_get_costs_since_16_days_is_grouped_by_week(self):
+        current_cost_mysql_service.now = lambda: datetime(2015, 6, 17, 12, 0, 0)
+        for i in range(1, 17):
+            yield from self.message_handler.save({'date': datetime(2015, 6, i, 12, 0, 0), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
+
+        data = yield from self.current_cost_service.get_costs(since=datetime(2015, 6, 1, 0, 0))
+
+        self.assertEqual(3, len(data))
+        self.assertEqual((datetime(2015, 6, 1), (Decimal(6.0), Decimal(0.0))), data[0])
+        self.assertEqual((datetime(2015, 6, 7), (Decimal(7.0), Decimal(0.0))), data[1])
+        self.assertEqual((datetime(2015, 6, 14), (Decimal(3.0), Decimal(0.0))), data[2])
+
+    @async_coro
+    def test_get_costs_since_11_weeks_is_grouped_by_month(self):
+        current_cost_mysql_service.now = lambda: datetime(2015, 8, 17, 12, 0, 0)
+        for i in range(0, 65):
+            yield from self.message_handler.save({'date': datetime(2015, 6, 1, 12, 0, 0) + timedelta(days=i), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
+
+        data = yield from self.current_cost_service.get_costs(since=datetime(2015, 6, 1, 0, 0))
+
+        self.assertEqual(3, len(data))
+        self.assertEqual((datetime(2015, 6, 1), (Decimal(30.0), Decimal(0.0))), data[0])
+        self.assertEqual((datetime(2015, 7, 1), (Decimal(31.0), Decimal(0.0))), data[1])
+        self.assertEqual((datetime(2015, 8, 1), (Decimal(4.0), Decimal(0.0))), data[2])
 
 
 class MergeEmptyAndFullHours(TestCase):
