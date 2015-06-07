@@ -71,7 +71,7 @@ $(document).ready(function () {
 
     function costs() {
         $(".day_navigation").hide();
-        $.getJSON('/power/costs/' + 7 * 24 * 3600, function (json) {
+        $.getJSON('/power/costs/' + moment().add(-7, 'days').format(), function (json) {
             createCostChart('#chart', json);
         });
     }
@@ -89,6 +89,11 @@ $(document).ready(function () {
                 text: document.ontouchstart === undefined ?
                     'sélectionner une zone dans le graph pour zoomer' :
                     'Pinch the chart to zoom in'
+            },
+            navigation: {
+                buttonOptions: {
+                    enabled: true
+                }
             },
             xAxis: {
                 type: 'datetime',
@@ -244,7 +249,12 @@ $(document).ready(function () {
                 tooltip: {
                     valueSuffix: ' W'
                 }
-            }]
+            }],
+            navigation: {
+                buttonOptions: {
+                    enabled: true
+                }
+            }
         });
     }
 
@@ -294,8 +304,8 @@ $(document).ready(function () {
                 },
                 series: [
                     {
-                        name: data.HP_name,
-                        data: data.HP_data,
+                        name: 'Heures Pleines',
+                        data: [],
                         dataLabels: {
                             enabled: true,
                             color: '#FFFFFF',
@@ -311,8 +321,8 @@ $(document).ready(function () {
                         showInLegend: ((data.tarif_type == "HCHP") ? true : false)
                     },
                     {
-                        name: data.HC_name,
-                        data: data.HC_data,
+                        name: 'Heures Creuses',
+                        data: [],
                         dataLabels: {
                             enabled: true,
                             color: '#FFFFFF',
@@ -328,7 +338,7 @@ $(document).ready(function () {
                         showInLegend: ((data.tarif_type == "HCHP") ? true : false)
                     },
                     {
-                        name: data.BASE_name,
+                        name: 'Heures de base',
                         data: data.BASE_data,
                         events: {
                             click: function (e) {

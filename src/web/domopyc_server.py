@@ -85,7 +85,7 @@ def power_by_day(request):
 
 @asyncio.coroutine
 def power_costs(request):
-    since = request.match_info['since']
+    since = iso8601.parse_date(request.match_info['since'], default_timezone=get_localzone())
     data = yield from request.app['current_cost_service'].get_costs(since)
     return web.Response(body=dumps({'data': data}, cls=Iso8601DateEncoder).encode(),
                         headers={'Content-Type': 'application/json'})
