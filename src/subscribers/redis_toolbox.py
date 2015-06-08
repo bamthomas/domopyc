@@ -125,7 +125,7 @@ class RedisTimeCappedSubscriber(AsyncRedisSubscriber):
     @asyncio.coroutine
     def handle(self, message):
         yield from self.redis_pool.zadd(self.indicator_name,
-                                        {str(message[self.indicator_key]): message['date'].timestamp()})
+                                        {dumps({'date': message['date'], self.indicator_key: message[self.indicator_key]}, cls=Iso8601DateEncoder): message['date'].timestamp()})
         if self.max_data_age_in_seconds:
             yield from self.redis_pool.zremrangebyscore(self.indicator_name, ZScoreBoundary('-inf'),
                                                         ZScoreBoundary(
@@ -135,7 +135,7 @@ class RedisTimeCappedSubscriber(AsyncRedisSubscriber):
     def get_average(self):
         val = yield from self.redis_pool.zrange(self.indicator_name, 0, -1)
         d = yield from val.asdict()
-        return mean((float(v) for v in list(d))) if d else 0.0
+        return mean((float(loads(v, object_hook=with_iso8601_date)[self.indicator_key]) for v in list(d))) if d else 0.0
 
     @asyncio.coroutine
     def get_data(self, since_seconds=60):
@@ -143,7 +143,7 @@ class RedisTimeCappedSubscriber(AsyncRedisSubscriber):
                                                             ZScoreBoundary(now().timestamp() - since_seconds),
                                                             ZScoreBoundary(now().timestamp()))
         data_set = yield from t.asdict()
-        return list(map(lambda value: {self.indicator_key: int(value)}, list(data_set)))
+        return list(map(lambda value: loads(value, object_hook=with_iso8601_date), list(data_set)))
 
 
 

@@ -59,7 +59,7 @@ $(document).ready(function () {
         $("#current").text(item.temperature);
         var timestamp = moment(item.date);
         update_power_display();
-        chart.series[0].addPoint([timestamp, item.temperature], true, true);
+        chart.series[0].addPoint([timestamp.valueOf(), item.temperature], true, true);
     };
     since(60 * 12);
 });
@@ -69,7 +69,7 @@ function since(minutes) {
         var data = [];
         for (var index = 0; index < json_data.points.length; index++) {
             var point = json_data.points[index];
-            data.push([new Date(point['date']).getTime(), point['watt']]);
+            data.push([moment(point['date']).valueOf(), point['temperature']]);
         }
         chart.series[0].setData(data, true);
         chart.redraw();

@@ -22,9 +22,10 @@ root = logging.getLogger()
 logging.basicConfig()
 root.setLevel(logging.INFO)
 
+
 @asyncio.coroutine
-def create_redis_connection():
-    connection = yield from asyncio_redis.Connection.create(host='localhost', port=6379)
+def create_redis_pool(nb_conn):
+    connection = yield from asyncio_redis.Pool.create(host='localhost', port=6379, poolsize=nb_conn)
     return connection
 
 @asyncio.coroutine
@@ -34,23 +35,17 @@ def create_mysql_pool():
                                                loop=asyncio.get_event_loop())
     return pool
 
-@asyncio.coroutine
-def message_stream():
-    redis_conn = yield from create_redis_connection()
-    subscriber = yield from redis_conn.start_subscribe()
-    yield from subscriber.subscribe(["rfxcom"])
-    while True:
-        reply = yield from subscriber.next_published()
-        return reply.value
-
 
 @asyncio.coroutine
 def stream(request):
+    redis_pool = yield from create_redis_pool(1)
+    subscriber = yield from redis_pool.start_subscribe()
+    yield from subscriber.subscribe([RFXCOM_KEY])
     ws = web.WebSocketResponse()
     ws.start(request)
     while True:
-        data = yield from message_stream()
-        ws.send_str(data)
+        reply = yield from subscriber.next_published()
+        ws.send_str(reply.value)
     return ws
 
 
@@ -90,7 +85,7 @@ def power_costs(request):
 def livedata(request):
     seconds = int(request.match_info['seconds'])
     return web.Response(
-        body=dumps({'points': (yield from request.app['live_data_service'].get_data(request.app['redis_connection'], since_seconds=seconds))},
+        body=dumps({'points': (yield from request.app['live_data_service'].get_data(since_seconds=seconds))},
                    cls=Iso8601DateEncoder).encode())
 
 
@@ -98,7 +93,6 @@ def livedata(request):
 def init(aio_loop, mysql_pool=None):
     mysql_pool_local = mysql_pool if mysql_pool is not None else (yield from create_mysql_pool())
     app = web.Application(loop=aio_loop)
-    app['redis_connection'] = yield from create_redis_connection()
     app['current_cost_service'] = CurrentCostDatabaseReader(mysql_pool_local, full_hours_start=time(7), full_hours_stop=time(23))
 
     app.router.add_static(prefix='/static', path='static')
@@ -112,9 +106,7 @@ def init(aio_loop, mysql_pool=None):
     app.router.add_route('GET', '/power/day/{iso_date}', power_by_day)
     app.router.add_route('GET', '/power/costs/{since}', power_costs)
 
-    redis_conn = yield from create_redis_connection()
-
-    app['live_data_service'] = RedisTimeCappedSubscriber(redis_conn, 'current_cost_live_data', 300,
+    app['live_data_service'] = RedisTimeCappedSubscriber((yield from create_redis_pool(2)), 'current_cost_live_data', 300,
                                                          pubsub_key=CURRENT_COST_KEY, indicator_key='watt').start()
 
     srv = yield from aio_loop.create_server(app.make_handler(), '127.0.0.1', 8080)

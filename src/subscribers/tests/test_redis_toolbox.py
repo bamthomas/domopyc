@@ -149,6 +149,18 @@ class TestRedisTimeCappedSubscriber(WithRedis):
         self.assertEqual(3.5, value)
 
     @async_coro
+    def test_average_two_equal_data(self):
+        pool_temp = RedisTimeCappedSubscriber(self.connection, 'pool_temperature').start(2)
+
+        yield from self.connection.publish(rfxcom_emiter_receiver.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 0).isoformat(), 'temperature': 3.0}))
+        yield from self.connection.publish(rfxcom_emiter_receiver.RFXCOM_KEY, dumps({'date': datetime(2015, 2, 14, 15, 0, 1).isoformat(), 'temperature': 3.0}))
+        yield from asyncio.wait_for(pool_temp.message_loop_task, timeout=1)
+
+        value = yield from pool_temp.get_average()
+        self.assertEqual(2, (yield from self.connection.zcard('pool_temperature')))
+        self.assertEqual(3, value)
+
+    @async_coro
     def test_capped_collection(self):
         pool_temp = RedisTimeCappedSubscriber(self.connection, 'pool_temperature', 10).start(3)
         redis_toolbox.now = lambda: datetime(2015, 2, 14, 15, 0, 10, tzinfo=timezone.utc)
@@ -169,7 +181,7 @@ class TestRedisTimeCappedSubscriber(WithRedis):
         data = yield from live_data_handler.get_data()
 
         self.assertEqual(1, len(data))
-        self.assertEqual({'watt': 100}, data[0])
+        self.assertEqual({'date': redis_toolbox.now(), 'watt': 100}, data[0])
 
     @async_coro
     def test_get_live_data_keeps_one_hour_data(self):
