@@ -1,6 +1,6 @@
-from asyncio import get_event_loop
+import asyncio
 from daq.publishers.redis_publisher import RedisPublisher
-from daq.rfxcom_emiter_receiver import RfxcomReader
+from daq.rfxcom_emiter_receiver import RfxcomReader, RFXCOM_KEY
 from subscribers.redis_toolbox import create_redis_pool
 
 
@@ -13,10 +13,15 @@ def calculate_in_minutes(temperature):
     return temperature/2 * 60
 
 
+@asyncio.coroutine
+def create_publisher():
+    redis_conn = yield from create_redis_pool()
+    return RfxcomReader(dev_name, RedisPublisher(redis_conn, RFXCOM_KEY))
+
+
 if __name__ == '__main__':
     try:
-        redis_conn = create_redis_pool()
-        RfxcomReader(dev_name, RedisPublisher(redis_conn))
-        get_event_loop().run_forever()
+        publisher = asyncio.async(create_publisher())
+        asyncio.get_event_loop().run_forever()
     finally:
-        get_event_loop().close()
+        asyncio.get_event_loop().close()
