@@ -6,7 +6,7 @@ from logging.handlers import SysLogHandler
 import xml.etree.cElementTree as ET
 
 from serial import FileLike
-
+from tzlocal import get_localzone
 
 CURRENT_COST = 'current_cost'
 
@@ -21,7 +21,7 @@ CURRENT_COST_KEY = 'current_cost'
 
 
 def now():
-    return datetime.now()
+    return datetime.now(tz=get_localzone())
 
 
 class AsyncCurrentCostReader(FileLike):

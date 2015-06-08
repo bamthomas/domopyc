@@ -4,7 +4,7 @@ from datetime import datetime
 import logging
 from rfxcom import protocol
 from rfxcom.transport import AsyncioTransport
-
+from tzlocal import get_localzone
 
 root = logging.getLogger()
 logging.basicConfig()
@@ -16,7 +16,7 @@ RFXCOM_KEY = "rfxcom"
 
 
 def now():
-    return datetime.now()
+    return datetime.now(tz=get_localzone())
 
 
 class RfxcomReader(object):
