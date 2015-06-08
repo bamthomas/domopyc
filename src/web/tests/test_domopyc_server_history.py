@@ -1,17 +1,13 @@
-from datetime import datetime, timedelta, timezone
-from json import dumps, loads
+from datetime import datetime, timezone
 import asyncio
 from unittest import TestCase
+
 import aiohttp
 import os
 import aiomysql
-
-from iso8601_json import Iso8601DateEncoder, with_iso8601_date
 from subscribers.mysql_toolbox import MysqlAverageMessageHandler
 from test_utils.ut_async import async_coro
-from test_utils.ut_redis import WithRedis
 from web import domopyc_server
-from web.domopyc_server import get_current_cost_data
 
 __author__ = 'bruno'
 
