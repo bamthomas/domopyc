@@ -18,6 +18,16 @@ def async_coro(f):
 
 class TestMessageHandler(object):
     queue = Queue()
+
     @asyncio.coroutine
     def handle(self, message):
         yield from self.queue.put(message)
+
+
+class TestExceptionMessageHandler(object):
+    queue = Queue()
+
+    @asyncio.coroutine
+    def handle(self, message):
+        yield from self.queue.put(message)
+        raise Exception("an exception occured in handle message")

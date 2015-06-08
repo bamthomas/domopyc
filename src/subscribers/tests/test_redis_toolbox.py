@@ -9,7 +9,7 @@ from daq.current_cost_sensor import CURRENT_COST_KEY
 from iso8601_json import Iso8601DateEncoder, with_iso8601_date
 from subscribers import redis_toolbox
 from subscribers.redis_toolbox import AsyncRedisSubscriber, AverageMessageHandler, RedisAverageMessageHandler, RedisTimeCappedSubscriber
-from test_utils.ut_async import async_coro, TestMessageHandler
+from test_utils.ut_async import async_coro, TestMessageHandler, TestExceptionMessageHandler
 from test_utils.ut_redis import WithRedis
 
 
@@ -17,18 +17,30 @@ class RedisSubscribeLoopTest(WithRedis):
     @async_coro
     def setUp(self):
         yield from super().setUp()
-        self.message_handler = TestMessageHandler()
-        self.subscriber = AsyncRedisSubscriber(self.connection, self.message_handler, 'key')
 
     @async_coro
     def test_subscribe_loop(self):
-        self.subscriber.start(1)
+        message_handler = TestMessageHandler()
+        AsyncRedisSubscriber(self.connection, message_handler, 'key').start(1)
         expected = {'date': datetime.now(timezone.utc), 'watt': '123'}
 
         yield from self.connection.publish('key', dumps(expected, cls=Iso8601DateEncoder))
 
-        event = yield from asyncio.wait_for(self.message_handler.queue.get(), 2)
+        event = yield from asyncio.wait_for(message_handler.queue.get(), 2)
         self.assertDictEqual(event, expected)
+
+    @async_coro
+    def test_should_not_leave_main_loop_when_an_exception_occurs_in_main_loop(self):
+        handler = TestExceptionMessageHandler()
+        exception_subscriber = AsyncRedisSubscriber(self.connection, handler, 'key')
+        exception_subscriber.start(2)
+        expected = {'date': datetime.now(timezone.utc), 'watt': '123'}
+
+        yield from self.connection.publish('key', dumps(expected, cls=Iso8601DateEncoder))
+        yield from self.connection.publish('key', dumps(expected, cls=Iso8601DateEncoder))
+        yield from asyncio.wait_for(exception_subscriber.message_loop_task, timeout=1)
+
+        self.assertEqual(handler.queue.qsize(), 2)
 
 
 class AverageMessageHandlerForTest(AverageMessageHandler):
@@ -154,7 +166,7 @@ class TestRedisTimeCappedSubscriber(WithRedis):
         live_data_handler = RedisTimeCappedSubscriber(self.connection, 'live_data', 3600, pubsub_key=CURRENT_COST_KEY, indicator_key='watt').start()
         yield from live_data_handler.handle({'date': redis_toolbox.now(), 'watt': 100})
 
-        data = yield from live_data_handler.get_data(self.connection)
+        data = yield from live_data_handler.get_data()
 
         self.assertEqual(1, len(data))
         self.assertEqual({'watt': 100}, data[0])
@@ -171,6 +183,6 @@ class TestRedisTimeCappedSubscriber(WithRedis):
         redis_toolbox.now = lambda: test_now + timedelta(seconds=3660)
         yield from live_data_handler.handle({'date': redis_toolbox.now(), 'watt': 300})
 
-        self.assertEqual(2, len((yield from live_data_handler.get_data(self.connection, since_seconds=3600))))
-        self.assertEqual(1, len((yield from live_data_handler.get_data(self.connection, since_seconds=1800))))
+        self.assertEqual(2, len((yield from live_data_handler.get_data(since_seconds=3600))))
+        self.assertEqual(1, len((yield from live_data_handler.get_data(since_seconds=1800))))
 
