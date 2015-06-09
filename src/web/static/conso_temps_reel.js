@@ -1,9 +1,3 @@
-var CURRENT_WH = 0;
-
-function update_power_display() {
-    $("#wh").text(CURRENT_WH.toFixed(2));
-}
-
 var chart;
 
 $(document).ready(function () {
@@ -20,7 +14,7 @@ $(document).ready(function () {
             marginRight: 10
         },
         title: {
-            text: 'Consommation par jour'
+            text: 'Consommation en temps réel'
         },
         xAxis: {
             type: 'datetime',
@@ -29,12 +23,6 @@ $(document).ready(function () {
         yAxis: {
             title: {
                 text: 'Watt'
-            }
-        },
-        tooltip: {
-            formatter: function () {
-                return '<b>' + this.series.name + '</b><br/>' +
-                    Highcharts.dateFormat('%H:%M:%S', this.x) + ': <b>' + this.y + ' w</b>';
             }
         },
         legend: {
@@ -55,10 +43,11 @@ $(document).ready(function () {
 
     socket.onmessage = function (msg) {
         var item = JSON.parse(msg.data);
-        console.log(item);
         $("#current").text(item.temperature);
         var timestamp = moment(item.date);
-        update_power_display();
-        chart.series[0].addPoint([timestamp.valueOf(), item.temperature], true, true);
+        var series = chart.series[0], shift = series.data.length > 170;
+
+        console.log("item timestamp=" + timestamp + " item.temp=" + item.temperature);
+        chart.series[0].addPoint([timestamp.toDate(), item.temperature], true, shift);
     };
 });
