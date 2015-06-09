@@ -21,7 +21,7 @@ class MysqlAverageMessageHandler(AverageMessageHandler):
                             ) ENGINE=MyISAM DEFAULT CHARSET=utf8'''
 
     def __init__(self, db, average_period_minutes=0, loop=asyncio.get_event_loop()):
-        super(MysqlAverageMessageHandler, self).__init__(average_period_minutes)
+        super(MysqlAverageMessageHandler, self).__init__(['watt', 'temperature'], average_period_minutes)
         self.db = db
         self.loop = loop
         asyncio.async(self.setup_db())

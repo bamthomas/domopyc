@@ -44,8 +44,8 @@ class RedisSubscribeLoopTest(WithRedis):
 
 
 class AverageMessageHandlerForTest(AverageMessageHandler):
-    def __init__(self, average_period_minutes=0):
-        super().__init__(average_period_minutes)
+    def __init__(self, keys, average_period_minutes=0):
+        super().__init__(keys, average_period_minutes)
         self.queue = Queue()
 
     @asyncio.coroutine
@@ -56,7 +56,7 @@ class AverageMessageHandlerForTest(AverageMessageHandler):
 class AverageMessageHandlerTest(unittest.TestCase):
     def setUp(self):
         redis_toolbox.now = lambda: datetime(2012, 12, 13, 14, 2, 0, tzinfo=timezone.utc)
-        self.message_handler = AverageMessageHandlerForTest(average_period_minutes=10)
+        self.message_handler = AverageMessageHandlerForTest(['watt', 'temperature'], average_period_minutes=10)
 
     @async_coro
     def test_next_plain(self):
@@ -87,7 +87,7 @@ class RedisAverageMessageHandlerTest(WithRedis):
     def setUp(self):
         yield from super().setUp()
         redis_toolbox.now = lambda: datetime(2012, 12, 13, 14, 2, 0, tzinfo=timezone.utc)
-        self.message_handler = RedisAverageMessageHandler(self.connection)
+        self.message_handler = RedisAverageMessageHandler(self.connection, ['watt', 'temperature'])
 
     @async_coro
     def test_save_event_redis_function(self):

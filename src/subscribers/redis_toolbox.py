@@ -5,12 +5,13 @@ from json import loads, dumps
 import logging
 import asyncio
 
+import operator
 from asyncio_redis import ZScoreBoundary
 import asyncio_redis
 from daq import rfxcom_emiter_receiver
 from daq.current_cost_sensor import AsyncCurrentCostReader, DEVICE
-from functools import reduce
 import serial
+from tzlocal import get_localzone
 from iso8601_json import with_iso8601_date, Iso8601DateEncoder
 
 CURRENT_COST = 'current_cost'
@@ -19,7 +20,7 @@ logging.basicConfig(format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
 LOGGER = logging.getLogger('current_cost')
 
 
-now = datetime.now
+def now(): return datetime.now(tz=get_localzone())
 
 
 @asyncio.coroutine
@@ -64,7 +65,8 @@ class AsyncRedisSubscriber(object):
                 LOGGER.exception(e)
 
 class AverageMessageHandler(object):
-    def __init__(self, average_period_minutes=0):
+    def __init__(self, keys, average_period_minutes=0):
+        self.keys = keys
         self.delta_minutes = timedelta(minutes=average_period_minutes)
         self.next_save_date = average_period_minutes == 0 and now() or self.next_plain(average_period_minutes, now())
         self.messages = []
@@ -83,17 +85,10 @@ class AverageMessageHandler(object):
             return asyncio.async(self.save(average_json_message))
 
     def get_average_json_message(self, date):
-        watt_and_temp = map(lambda msg: (msg['watt'], msg['temperature']), self.messages)
-
-        def add_tuple(x_t, y_v):
-            x, t = x_t
-            y, v = y_v
-            return x + y, t + v
-
-        watt_sum, temp_sum = reduce(add_tuple, watt_and_temp)
         nb_messages = len(self.messages)
-        return {'date': date, 'watt': watt_sum / nb_messages, 'temperature': temp_sum / nb_messages,
-                'nb_data': nb_messages, 'minutes': int(self.delta_minutes.total_seconds() / 60)}
+        keys_mean = map(mean, zip(*map(operator.itemgetter(*self.keys), self.messages)))
+        dict_mean = dict(zip(self.keys, keys_mean))
+        return dict(date=date, nb_data=nb_messages, minutes=int(self.delta_minutes.total_seconds() / 60), **dict_mean)
 
     @asyncio.coroutine
     def save(self, average_message):
@@ -101,8 +96,8 @@ class AverageMessageHandler(object):
 
 
 class RedisAverageMessageHandler(AverageMessageHandler):
-    def __init__(self, db, average_period_minutes=0):
-        super(RedisAverageMessageHandler, self).__init__(average_period_minutes)
+    def __init__(self, db, keys, average_period_minutes=0):
+        super(RedisAverageMessageHandler, self).__init__(keys, average_period_minutes)
         self.redis_conn = db
 
     @asyncio.coroutine
