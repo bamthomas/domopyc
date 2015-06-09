@@ -2,14 +2,14 @@
 import logging
 import asyncio
 
-from subscribers.redis_toolbox import AverageMessageHandler
+from subscribers.toolbox import AverageMemoryMessageHandler
 
 
 logging.basicConfig(format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
 LOGGER = logging.getLogger('domopyc')
 
 
-class MysqlAverageMessageHandler(AverageMessageHandler):
+class MysqlAverageMessageHandler(AverageMemoryMessageHandler):
     CREATE_TABLE_SQL = '''CREATE TABLE IF NOT EXISTS `current_cost` (
                             `id` mediumint(9) NOT NULL AUTO_INCREMENT,
                             `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

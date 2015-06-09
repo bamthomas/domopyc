@@ -1,27 +1,25 @@
 # coding=utf-8
-from datetime import datetime, timedelta
+from datetime import datetime
 from statistics import mean
 from json import loads, dumps
 import logging
 import asyncio
 
-import operator
 from asyncio_redis import ZScoreBoundary
 import asyncio_redis
 from daq import rfxcom_emiter_receiver
 from daq.current_cost_sensor import AsyncCurrentCostReader, DEVICE
 import serial
-from tzlocal import get_localzone
+from subscribers.toolbox import AverageMemoryMessageHandler
 from iso8601_json import with_iso8601_date, Iso8601DateEncoder
+from tzlocal import get_localzone
 
 CURRENT_COST = 'current_cost'
 
 logging.basicConfig(format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
 LOGGER = logging.getLogger('current_cost')
 
-
 def now(): return datetime.now(tz=get_localzone())
-
 
 @asyncio.coroutine
 def create_redis_pool():
@@ -64,38 +62,9 @@ class AsyncRedisSubscriber(object):
             except Exception as e:
                 LOGGER.exception(e)
 
-class AverageMessageHandler(object):
-    def __init__(self, keys, average_period_minutes=0):
-        self.keys = keys
-        self.delta_minutes = timedelta(minutes=average_period_minutes)
-        self.next_save_date = average_period_minutes == 0 and now() or self.next_plain(average_period_minutes, now())
-        self.messages = []
-
-    @staticmethod
-    def next_plain(minutes, dt):
-        return dt - timedelta(minutes=dt.minute % minutes - minutes, seconds=dt.second, microseconds=dt.microsecond)
-
-    def handle(self, json_message):
-        message = loads(json_message, object_hook=with_iso8601_date)
-        self.messages.append(message)
-        if now() >= self.next_save_date:
-            average_json_message = self.get_average_json_message(message['date'])
-            self.next_save_date = self.next_save_date + self.delta_minutes
-            self.messages = []
-            return asyncio.async(self.save(average_json_message))
-
-    def get_average_json_message(self, date):
-        nb_messages = len(self.messages)
-        keys_mean = map(mean, zip(*map(operator.itemgetter(*self.keys), self.messages)))
-        dict_mean = dict(zip(self.keys, keys_mean))
-        return dict(date=date, nb_data=nb_messages, minutes=int(self.delta_minutes.total_seconds() / 60), **dict_mean)
-
-    @asyncio.coroutine
-    def save(self, average_message):
-        raise NotImplementedError
 
 
-class RedisAverageMessageHandler(AverageMessageHandler):
+class RedisAverageMessageHandler(AverageMemoryMessageHandler):
     def __init__(self, db, keys, average_period_minutes=0):
         super(RedisAverageMessageHandler, self).__init__(keys, average_period_minutes)
         self.redis_conn = db
