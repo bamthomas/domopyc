@@ -1,8 +1,9 @@
-from datetime import datetime
-from json import loads
+from datetime import datetime, timezone
+from json import loads, dumps
 import asyncio
 
 import aiohttp
+from iso8601_json import Iso8601DateEncoder
 import os
 from subscribers import redis_toolbox
 from test_utils.ut_async import async_coro
@@ -26,12 +27,13 @@ class GetLiveData(WithRedis):
 
     @async_coro
     def test_live_data(self):
-        yield from self.connection.zadd('current_cost_live_data', {'305': redis_toolbox.now().timestamp()})
+        now = datetime.now(tz=timezone.utc)
+        yield from self.connection.zadd('current_cost_live_data', {dumps({'date': now, 'watt': 305}, cls=Iso8601DateEncoder): redis_toolbox.now().timestamp()})
 
         response = yield from aiohttp.request('GET', 'http://127.0.0.1:8080/data_since/5')
 
         val = yield from response.read()
-        self.assertEqual(loads(val.decode()), {"points": [{'watt': 305}]})
+        self.assertEqual(loads(val.decode()), {'points': [{'date': now.isoformat(), 'watt': 305}]})
 
     @property
     def redis_key(self):

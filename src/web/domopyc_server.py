@@ -1,7 +1,7 @@
 # coding=utf-8
 import asyncio
 from datetime import datetime, timedelta, time
-from json import loads, dumps
+from json import dumps
 import logging
 
 from aiohttp import web
@@ -12,7 +12,7 @@ from daq.rfxcom_emiter_receiver import RFXCOM_KEY
 from iso8601 import iso8601
 import jinja2
 from daq.current_cost_sensor import CURRENT_COST_KEY
-from iso8601_json import with_iso8601_date, Iso8601DateEncoder
+from iso8601_json import Iso8601DateEncoder
 from subscribers.redis_toolbox import RedisTimeCappedSubscriber
 from tzlocal import get_localzone
 from web.current_cost_mysql_service import CurrentCostDatabaseReader
