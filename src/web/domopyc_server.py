@@ -3,6 +3,7 @@ import asyncio
 from datetime import datetime, timedelta, time
 from json import dumps
 import logging
+import aiohttp
 
 from aiohttp import web
 import aiohttp_jinja2
@@ -13,7 +14,6 @@ from iso8601 import iso8601
 import jinja2
 from daq.current_cost_sensor import CURRENT_COST_KEY
 from iso8601_json import Iso8601DateEncoder
-from subscribers.redis_toolbox import RedisTimeCappedSubscriber
 from tzlocal import get_localzone
 from web.current_cost_mysql_service import CurrentCostDatabaseReader
 
@@ -21,7 +21,7 @@ now = datetime.now
 root = logging.getLogger()
 logging.basicConfig()
 root.setLevel(logging.INFO)
-
+logger = logging.getLogger('domopyc_server')
 
 @asyncio.coroutine
 def create_redis_pool(nb_conn):
@@ -40,12 +40,19 @@ def create_mysql_pool():
 def stream(request):
     redis_pool = yield from create_redis_pool(1)
     subscriber = yield from redis_pool.start_subscribe()
-    yield from subscriber.subscribe([RFXCOM_KEY])
+    yield from subscriber.subscribe([CURRENT_COST_KEY])
     ws = web.WebSocketResponse()
     ws.start(request)
-    while True:
+    continue_loop = True
+    while continue_loop:
         reply = yield from subscriber.next_published()
-        ws.send_str(reply.value)
+        if ws.closed:
+            logger.info('leaving web socket stream, usubscribing')
+            yield from subscriber.unsubscribe()
+            continue_loop = False
+        else:
+            ws.send_str(reply.value)
+
     return ws
 
 
@@ -81,13 +88,6 @@ def power_costs(request):
     return web.Response(body=dumps({'data': data}, cls=Iso8601DateEncoder).encode(),
                         headers={'Content-Type': 'application/json'})
 
-@asyncio.coroutine
-def livedata(request):
-    seconds = int(request.match_info['seconds'])
-    return web.Response(
-        body=dumps({'points': (yield from request.app['live_data_service'].get_data(since_seconds=seconds))},
-                   cls=Iso8601DateEncoder).encode())
-
 
 @asyncio.coroutine
 def init(aio_loop, mysql_pool=None):
@@ -98,16 +98,12 @@ def init(aio_loop, mysql_pool=None):
     app.router.add_static(prefix='/static', path='static')
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader('templates'))
 
-    app.router.add_route('GET', '/stream', stream)
+    app.router.add_route('GET', '/livedata/power', stream)
     app.router.add_route('GET', '/', home)
-    app.router.add_route('GET', '/data_since/{seconds}', livedata)
     app.router.add_route('GET', '/menu/{page}', menu_item)
     app.router.add_route('GET', '/power/history', power_history)
     app.router.add_route('GET', '/power/day/{iso_date}', power_by_day)
     app.router.add_route('GET', '/power/costs/{since}', power_costs)
-
-    app['live_data_service'] = RedisTimeCappedSubscriber((yield from create_redis_pool(2)), 'current_cost_live_data', 300,
-                                                         pubsub_key=CURRENT_COST_KEY, indicator_key='watt').start()
 
     srv = yield from aio_loop.create_server(app.make_handler(), '127.0.0.1', 8080)
     print("Server started at http://127.0.0.1:8080")

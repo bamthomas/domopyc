@@ -51,7 +51,7 @@ $(document).ready(function () {
         ]
     });
 
-    var socket = new WebSocket("ws://localhost:8080/stream");
+    var socket = new WebSocket("ws://localhost:8080/livedata/power");
 
     socket.onmessage = function (msg) {
         var item = JSON.parse(msg.data);
@@ -61,17 +61,4 @@ $(document).ready(function () {
         update_power_display();
         chart.series[0].addPoint([timestamp.valueOf(), item.temperature], true, true);
     };
-    since(60 * 12);
 });
-
-function since(minutes) {
-    $.getJSON('/data_since/' + minutes * 60, function (json_data) {
-        var data = [];
-        for (var index = 0; index < json_data.points.length; index++) {
-            var point = json_data.points[index];
-            data.push([moment(point['date']).valueOf(), point['temperature']]);
-        }
-        chart.series[0].setData(data, true);
-        chart.redraw();
-    });
-}
