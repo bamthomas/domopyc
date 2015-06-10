@@ -30,10 +30,9 @@ class AverageMemoryMessageHandler(object):
             return asyncio.async(self.save(average_json_message))
 
     def get_average_json_message(self, date):
-        nb_messages = len(self.messages)
         keys_mean = map(mean, zip(*map(itemgetter(*self.keys), self.messages)))
         dict_mean = dict(zip(self.keys, keys_mean))
-        return dict(date=date, nb_data=nb_messages, minutes=int(self.delta_minutes.total_seconds() / 60), **dict_mean)
+        return dict(date=date, nb_data=len(self.messages), minutes=int(self.delta_minutes.total_seconds() / 60), **dict_mean)
 
     @asyncio.coroutine
     def save(self, average_message):
