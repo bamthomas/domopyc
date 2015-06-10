@@ -13,6 +13,7 @@ from daq.rfxcom_emiter_receiver import RFXCOM_KEY
 from iso8601 import iso8601
 import jinja2
 from daq.current_cost_sensor import CURRENT_COST_KEY
+from indicators.filtration_duration import calculate_in_minutes
 from iso8601_json import Iso8601DateEncoder
 from tzlocal import get_localzone
 from web.current_cost_mysql_service import CurrentCostDatabaseReader
@@ -61,11 +62,22 @@ def home(_):
     return {}
 
 
-@asyncio.coroutine
-def menu_item(request):
-    page = request.match_info['page']
-    return aiohttp_jinja2.render_template('%s.j2' % page, request, {})
-
+@aiohttp_jinja2.template('piscine.j2')
+def piscine(request):
+    value = yield from request.app['current_cost_service'].get_last_value('test_temp', 'temperature')
+    return {'temperature': value, 'temps_filtrage': str(timedelta(minutes=calculate_in_minutes(value)))}
+@aiohttp_jinja2.template('apropos.j2')
+def apropos(request):
+    return {}
+@aiohttp_jinja2.template('conso_electrique.j2')
+def conso_electrique(request):
+    return {}
+@aiohttp_jinja2.template('conso_temps_reel.j2')
+def conso_temps_reel(request):
+    return {}
+@aiohttp_jinja2.template('commandes.j2')
+def commandes(request):
+    return {}
 
 @asyncio.coroutine
 def power_history(request):
@@ -100,7 +112,11 @@ def init(aio_loop, mysql_pool=None):
 
     app.router.add_route('GET', '/livedata/power', stream)
     app.router.add_route('GET', '/', home)
-    app.router.add_route('GET', '/menu/{page}', menu_item)
+    app.router.add_route('GET', '/menu/piscine', piscine)
+    app.router.add_route('GET', '/menu/apropos', apropos)
+    app.router.add_route('GET', '/menu/conso_electrique', conso_electrique)
+    app.router.add_route('GET', '/menu/conso_temps_reel', conso_temps_reel)
+    app.router.add_route('GET', '/menu/commandes', commandes)
     app.router.add_route('GET', '/power/history', power_history)
     app.router.add_route('GET', '/power/day/{iso_date}', power_by_day)
     app.router.add_route('GET', '/power/costs/{since}', power_costs)

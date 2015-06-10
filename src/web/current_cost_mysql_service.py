@@ -66,6 +66,15 @@ class CurrentCostDatabaseReader(object):
                 return map(lambda t: t[0:2], iterable)
             return merge_full_and_empty_hours(keep_two_first_fields(full), keep_two_first_fields(empty))
 
+    @asyncio.coroutine
+    def get_last_value(self, table, field):
+        with (yield from self.pool) as conn:
+            cur = yield from conn.cursor()
+            yield from cur.execute("SELECT {field} from {table} order by timestamp LIMIT 1".format(field=field, table=table))
+            value = yield from cur.fetchone()
+            yield from cur.close()
+            return float(value[0])
+
 
 def merge_full_and_empty_hours(full, empty):
     full_hours_dict = dict(full)
