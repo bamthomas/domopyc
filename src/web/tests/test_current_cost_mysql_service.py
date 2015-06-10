@@ -4,7 +4,7 @@ from decimal import Decimal
 from unittest import TestCase
 
 import aiomysql
-from subscribers.mysql_toolbox import MysqlAverageMessageHandler
+from subscribers.mysql_toolbox import MysqlCurrentCostMessageHandler
 from test_utils.ut_async import async_coro
 from tzlocal import get_localzone
 from web import current_cost_mysql_service
@@ -18,7 +18,7 @@ class GetCurrentCostData(TestCase):
                                                     user='test', password='test', db='test',
                                                     loop=asyncio.get_event_loop())
 
-        self.message_handler = MysqlAverageMessageHandler(self.pool)
+        self.message_handler = MysqlCurrentCostMessageHandler(self.pool)
         self.current_cost_service = CurrentCostDatabaseReader(self.pool, time(8, 0), time(22, 0))
         current_cost_mysql_service.now = lambda: datetime(2015, 6, 1, 12, 0, 0, tzinfo=get_localzone())
         with (yield from self.pool) as conn:

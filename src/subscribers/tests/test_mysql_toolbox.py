@@ -6,19 +6,16 @@ import aiomysql
 from iso8601_json import Iso8601DateEncoder
 
 from subscribers import redis_toolbox
-from subscribers.mysql_toolbox import MysqlAverageMessageHandler
+from subscribers.mysql_toolbox import MysqlCurrentCostMessageHandler, MysqlTemperatureMessageHandler
 from test_utils.ut_async import async_coro
-
-
-__author__ = 'bruno'
 
 
 class MysqlAverageMessageHandlerTest(unittest.TestCase):
     @async_coro
     def setUp(self):
         self.pool = yield from aiomysql.create_pool(host='127.0.0.1', port=3306,
-                                           user='test', password='test', db='test',
-                                           loop=asyncio.get_event_loop())
+                                                    user='test', password='test', db='test',
+                                                    loop=asyncio.get_event_loop())
 
         with (yield from self.pool) as conn:
             cur = yield from conn.cursor()
@@ -26,7 +23,7 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
             yield from cur.close()
 
         redis_toolbox.now = lambda: datetime(2012, 12, 13, 14, 2, 0, tzinfo=timezone.utc)
-        self.message_handler = MysqlAverageMessageHandler(self.pool)
+        self.message_handler = MysqlCurrentCostMessageHandler(self.pool)
 
     @async_coro
     def tearDown(self):
@@ -42,7 +39,7 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
             current_cost_table = yield from cur.fetchall()
             self.assertEqual((('current_cost',),), current_cost_table)
 
-            MysqlAverageMessageHandler(self.pool, average_period_minutes=10)
+            MysqlCurrentCostMessageHandler(self.pool, average_period_minutes=10)
 
             yield from cur.execute("show tables like 'current_cost'")
             current_cost_table = yield from cur.fetchall()
@@ -72,3 +69,37 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
             yield from cursor.execute("select * from %s" % table)
             allrows = yield from cursor.fetchall()
             return len(allrows)
+
+
+class MysqlTemperatureMessageHandlerTest(unittest.TestCase):
+    @async_coro
+    def setUp(self):
+        self.pool = yield from aiomysql.create_pool(host='127.0.0.1', port=3306,
+                                                    user='test', password='test', db='test',
+                                                    loop=asyncio.get_event_loop())
+
+        with (yield from self.pool) as conn:
+            cur = yield from conn.cursor()
+            yield from cur.execute("drop table if EXISTS test_temp")
+            yield from cur.close()
+
+        redis_toolbox.now = lambda: datetime(2012, 12, 13, 14, 2, 0, tzinfo=timezone.utc)
+        self.message_handler = MysqlTemperatureMessageHandler(self.pool, 'test_temp')
+
+    @async_coro
+    def tearDown(self):
+        self.pool.close()
+        yield from self.pool.wait_closed()
+
+    @async_coro
+    def test_save_event_mysql(self):
+        with (yield from self.pool) as conn:
+            now = datetime(2012, 12, 13, 14, 0, 7, tzinfo=timezone.utc)
+
+            yield from self.message_handler.handle({'date': now, 'temperature': 21.4})
+
+            cursor = yield from conn.cursor()
+            yield from cursor.execute("select timestamp, temperature from test_temp")
+            rows = yield from cursor.fetchall()
+            self.assertEqual((datetime(2012, 12, 13, 14, 0, 7), 21.4), rows[0])
+            yield from cursor.close()

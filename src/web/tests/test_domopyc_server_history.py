@@ -5,7 +5,7 @@ from unittest import TestCase
 import aiohttp
 import os
 import aiomysql
-from subscribers.mysql_toolbox import MysqlAverageMessageHandler
+from subscribers.mysql_toolbox import MysqlCurrentCostMessageHandler
 from test_utils.ut_async import async_coro
 from web import domopyc_server
 
@@ -21,7 +21,7 @@ class RedisGetDataOfDay(TestCase):
                                                     loop=asyncio.get_event_loop())
 
         self.server = yield from domopyc_server.init(asyncio.get_event_loop(), self.pool)
-        self.message_handler = MysqlAverageMessageHandler(self.pool)
+        self.message_handler = MysqlCurrentCostMessageHandler(self.pool)
         with (yield from self.pool) as conn:
             cur = yield from conn.cursor()
             yield from cur.execute("truncate current_cost")
