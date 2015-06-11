@@ -19,6 +19,7 @@ from iso8601_json import Iso8601DateEncoder
 from tzlocal import get_localzone
 from subscribers.mysql_toolbox import MysqlTemperatureMessageHandler
 from subscribers.redis_toolbox import AsyncRedisSubscriber
+from web.configuration import PARAMETERS
 from web.current_cost_mysql_service import CurrentCostDatabaseReader
 
 now = datetime.now
@@ -26,6 +27,8 @@ root = logging.getLogger()
 logging.basicConfig()
 root.setLevel(logging.INFO)
 logger = logging.getLogger('domopyc_server')
+
+TITLE_AND_CONFIG = {'title': PARAMETERS['title'], 'configuration': PARAMETERS}
 
 @asyncio.coroutine
 def create_redis_pool(nb_conn=1):
@@ -62,25 +65,26 @@ def stream(request):
 
 @aiohttp_jinja2.template('index.j2')
 def home(_):
-    return {}
+    return TITLE_AND_CONFIG
 
 
 @aiohttp_jinja2.template('piscine.j2')
 def piscine(request):
     value = yield from request.app['current_cost_service'].get_last_value('pool_temperature', 'temperature')
-    return {'temperature': value, 'temps_filtrage': str(timedelta(minutes=calculate_in_minutes(value)))}
+    return dict(temperature=value, temps_filtrage=str(timedelta(minutes=calculate_in_minutes(value))), **TITLE_AND_CONFIG)
+
 @aiohttp_jinja2.template('apropos.j2')
 def apropos(_):
-    return {}
+    return TITLE_AND_CONFIG
 @aiohttp_jinja2.template('conso_electrique.j2')
 def conso_electrique(_):
-    return {}
+    return TITLE_AND_CONFIG
 @aiohttp_jinja2.template('conso_temps_reel.j2')
 def conso_temps_reel(_):
-    return {}
+    return TITLE_AND_CONFIG
 @aiohttp_jinja2.template('commandes.j2')
 def commandes(_):
-    return {}
+    return TITLE_AND_CONFIG
 
 @asyncio.coroutine
 def power_history(request):

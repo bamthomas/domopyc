@@ -363,18 +363,11 @@ var power = (function () {
                 var categories = _(json.data).map(function (item) {return moment(item[0]).format(get_time_format(duration)); });
                 var full_hours = _(json.data).map(function (item) {return item[1][0]; });
                 var empty_hours = _(json.data).map(function (item) {return item[1][1]; });
-                var config = {
-                    'base_price': 0,
-                    'full_hours_price': 0.1353,
-                    'empty_hours_price': 0.0926,
-                    'subscription_fee': 262,
-                    'subscription_type': 'hphc'
-                };
                 createCostChart('#chart', {
                     'categories': categories,
                     'full_hours': full_hours,
                     'empty_hours': empty_hours
-                }, config);
+                }, CONFIGURATION);
             });
         }
     };
