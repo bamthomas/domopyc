@@ -15,7 +15,7 @@ class GetLiveData(WithRedis):
     def setUp(self):
         yield from super().setUp()
         os.chdir(os.path.dirname(os.path.realpath(__file__)) + '/..')
-        self.server = yield from domopyc_server.init(asyncio.get_event_loop())
+        self.server = yield from domopyc_server.init_frontend(asyncio.get_event_loop())
 
     @async_coro
     def tearDown(self):

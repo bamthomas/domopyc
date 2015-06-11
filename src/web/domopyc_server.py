@@ -13,9 +13,12 @@ from daq.rfxcom_emiter_receiver import RFXCOM_KEY
 from iso8601 import iso8601
 import jinja2
 from daq.current_cost_sensor import CURRENT_COST_KEY
+from indicators import filtration_duration
 from indicators.filtration_duration import calculate_in_minutes
 from iso8601_json import Iso8601DateEncoder
 from tzlocal import get_localzone
+from subscribers.mysql_toolbox import MysqlTemperatureMessageHandler
+from subscribers.redis_toolbox import AsyncRedisSubscriber
 from web.current_cost_mysql_service import CurrentCostDatabaseReader
 
 now = datetime.now
@@ -25,7 +28,7 @@ root.setLevel(logging.INFO)
 logger = logging.getLogger('domopyc_server')
 
 @asyncio.coroutine
-def create_redis_pool(nb_conn):
+def create_redis_pool(nb_conn=1):
     connection = yield from asyncio_redis.Pool.create(host='localhost', port=6379, poolsize=nb_conn)
     return connection
 
@@ -102,7 +105,14 @@ def power_costs(request):
 
 
 @asyncio.coroutine
-def init(aio_loop, mysql_pool=None):
+def init_backend():
+    daq_rfxcom = yield from filtration_duration.create_publisher()
+    pool_temp_recorder = AsyncRedisSubscriber((yield from create_redis_pool()),
+                                              MysqlTemperatureMessageHandler((yield from create_mysql_pool()), 'pool_temperature'),
+                                              RFXCOM_KEY)
+
+@asyncio.coroutine
+def init_frontend(aio_loop, mysql_pool=None):
     mysql_pool_local = mysql_pool if mysql_pool is not None else (yield from create_mysql_pool())
     app = web.Application(loop=aio_loop)
     app['current_cost_service'] = CurrentCostDatabaseReader(mysql_pool_local, full_hours_start=time(7), full_hours_stop=time(23))
@@ -128,5 +138,6 @@ def init(aio_loop, mysql_pool=None):
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(init(loop))
+    loop.run_until_complete(init_frontend(loop))
+    asyncio.async(init_backend())
     loop.run_forever()

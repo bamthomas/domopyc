@@ -20,7 +20,7 @@ class RedisGetDataOfDay(TestCase):
                                                     user='test', password='test', db='test',
                                                     loop=asyncio.get_event_loop())
 
-        self.server = yield from domopyc_server.init(asyncio.get_event_loop(), self.pool)
+        self.server = yield from domopyc_server.init_frontend(asyncio.get_event_loop(), self.pool)
         self.message_handler = MysqlCurrentCostMessageHandler(self.pool)
         with (yield from self.pool) as conn:
             cur = yield from conn.cursor()
