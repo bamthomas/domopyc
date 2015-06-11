@@ -70,7 +70,7 @@ class CurrentCostDatabaseReader(object):
     def get_last_value(self, table, field):
         with (yield from self.pool) as conn:
             cur = yield from conn.cursor()
-            yield from cur.execute("SELECT {field} from {table} order by timestamp LIMIT 1".format(field=field, table=table))
+            yield from cur.execute("SELECT {field} from {table} order by timestamp desc LIMIT 1".format(field=field, table=table))
             value = yield from cur.fetchone()
             yield from cur.close()
             return float(value[0])

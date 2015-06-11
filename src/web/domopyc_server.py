@@ -67,7 +67,7 @@ def home(_):
 
 @aiohttp_jinja2.template('piscine.j2')
 def piscine(request):
-    value = yield from request.app['current_cost_service'].get_last_value('test_temp', 'temperature')
+    value = yield from request.app['current_cost_service'].get_last_value('pool_temperature', 'temperature')
     return {'temperature': value, 'temps_filtrage': str(timedelta(minutes=calculate_in_minutes(value)))}
 @aiohttp_jinja2.template('apropos.j2')
 def apropos(request):
@@ -109,7 +109,7 @@ def init_backend():
     daq_rfxcom = yield from filtration_duration.create_publisher()
     pool_temp_recorder = AsyncRedisSubscriber((yield from create_redis_pool()),
                                               MysqlTemperatureMessageHandler((yield from create_mysql_pool()), 'pool_temperature'),
-                                              RFXCOM_KEY)
+                                              RFXCOM_KEY).start()
 
 @asyncio.coroutine
 def init_frontend(aio_loop, mysql_pool=None):
