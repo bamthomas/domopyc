@@ -8,7 +8,7 @@ dev_name = '/dev/serial/by-id/usb-RFXCOM_RFXtrx433_A1XZI13O-if00-port0'
 
 
 def calculate_in_minutes(temperature):
-    if temperature < 8.0:
+    if temperature < 10.0:
         return 0
     return temperature/2 * 60
 
