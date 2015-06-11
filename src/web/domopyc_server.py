@@ -70,16 +70,16 @@ def piscine(request):
     value = yield from request.app['current_cost_service'].get_last_value('pool_temperature', 'temperature')
     return {'temperature': value, 'temps_filtrage': str(timedelta(minutes=calculate_in_minutes(value)))}
 @aiohttp_jinja2.template('apropos.j2')
-def apropos(request):
+def apropos(_):
     return {}
 @aiohttp_jinja2.template('conso_electrique.j2')
-def conso_electrique(request):
+def conso_electrique(_):
     return {}
 @aiohttp_jinja2.template('conso_temps_reel.j2')
-def conso_temps_reel(request):
+def conso_temps_reel(_):
     return {}
 @aiohttp_jinja2.template('commandes.j2')
-def commandes(request):
+def commandes(_):
     return {}
 
 @asyncio.coroutine
