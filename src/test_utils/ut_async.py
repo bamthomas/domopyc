@@ -1,6 +1,7 @@
 # coding=utf-8
 import asyncio
 from asyncio import Queue
+from socket import socketpair
 import functools
 
 
@@ -14,6 +15,24 @@ def async_coro(f):
             loop.run_until_complete(future)
         return wrapper
     return wrap(f)
+
+
+class DummySerial(object):
+    def __init__(self):
+        self.internal_sock, self.serial = socketpair()
+        self.fd = self.internal_sock
+        self.internal_sock.settimeout(2)
+        self.serial.settimeout(2)
+
+    def read(self, bytes=1):
+        return self.internal_sock.recv(bytes)
+
+    def write(self, data):
+        self.internal_sock.send(data)
+
+    def close(self):
+        self.internal_sock.close()
+        self.serial.close()
 
 
 class TestMessageHandler(object):

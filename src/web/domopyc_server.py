@@ -9,7 +9,7 @@ from aiohttp import web
 import aiohttp_jinja2
 import aiomysql
 import asyncio_redis
-from daq.rfxcom_emiter_receiver import RFXCOM_KEY
+from daq.rfxcom_emiter_receiver import RFXCOM_KEY, create_publisher
 from iso8601 import iso8601
 import jinja2
 from daq.current_cost_sensor import CURRENT_COST_KEY
@@ -110,7 +110,7 @@ def power_costs(request):
 
 @asyncio.coroutine
 def init_backend():
-    daq_rfxcom = yield from filtration_duration.create_publisher()
+    daq_rfxcom = yield from create_publisher()
     pool_temp_recorder = AsyncRedisSubscriber((yield from create_redis_pool()),
                                               MysqlTemperatureMessageHandler((yield from create_mysql_pool()), 'pool_temperature'),
                                               RFXCOM_KEY).start()
