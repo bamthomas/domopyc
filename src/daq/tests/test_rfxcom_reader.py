@@ -40,21 +40,26 @@ class TestRfxTrx433e(WithRedis):
 
     @async_coro
     def test_write_data(self):
-        rfxcom_device = RfxTrx433e(self.serial_device, RedisPublisher(self.connection, rfxcom_emiter_receiver.RFXCOM_KEY))
-        yield from asyncio.sleep(0.4)
-        rfxcom_message = self.serial_device.serial.recv(14)
-        yield from asyncio.sleep(0.1)
-        rfxcom_message = self.serial_device.serial.recv(14)
-        yield from asyncio.sleep(0.1)
-        rfxcom_message = self.serial_device.serial.recv(14)
-        yield from asyncio.sleep(0.1)
-
+        rfxcom_device = RfxTrx433eForTest(None, RedisPublisher(self.connection, rfxcom_emiter_receiver.RFXCOM_KEY))
+        yield from asyncio.sleep(0.1) # beurk
         yield from self.connection.publish(rfxcom_emiter_receiver.RFXCOM_KEY_CMD, '{"code_device": "1234567", "value": "1"}')
-        yield from asyncio.sleep(0.4)
-        rfxcom_message = self.serial_device.serial.recv(12)
-        print(rfxcom_message)
-        self.assertEqual(b'0b1100010123456702010f70', binascii.hexlify(rfxcom_message))
+        yield from asyncio.sleep(0.1) # beurk
+        self.assertEqual(b'0b1100010123456702010f70', binascii.hexlify(rfxcom_device.rfxcom_transport.data_out.pop()))
 
+
+class RfxTrx433eForTest(RfxTrx433e):
+    class MockTransport(object):
+        def __init__(self):
+            self.data_out = []
+
+        def write(self, data):
+            self.data_out.append(data)
+
+    def __init__(self, device, publisher):
+        super().__init__(device, publisher)
+
+    def create_transport(self, device, event_loop):
+        return RfxTrx433eForTest.MockTransport()
 
 
 class DummyPacket(BasePacket):
