@@ -150,8 +150,8 @@ def init_frontend(aio_loop, mysql_pool=None):
     app.router.add_route('GET', '/power/day/{iso_date}', power_by_day)
     app.router.add_route('GET', '/power/costs/{since}', power_costs)
 
-    srv = yield from aio_loop.create_server(app.make_handler(), '127.0.0.1', 8080)
-    print("Server started at http://127.0.0.1:8080")
+    srv = yield from aio_loop.create_server(app.make_handler(), '0.0.0.0', 8080)
+    print("Server started at http://0.0.0.0:8080")
     return srv
 
 
