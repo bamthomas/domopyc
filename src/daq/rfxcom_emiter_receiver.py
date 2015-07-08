@@ -43,6 +43,7 @@ class RfxTrx433eMessageHandler(object):
     def set_rfxcom_transport(self, transport):
         self.rfxcom_transport = transport
 
+    @asyncio.coroutine
     def handle(self, json_message):
         if self.rfxcom_transport is not None:
             # cf http://rfxcmd.eu/?page_id=191
@@ -68,7 +69,7 @@ class RfxTrx433e(object):
         asyncio.async(self.publisher.publish(dict(packet.data, date=now().isoformat())))
 
     def default_callback(self, packet):
-        logger.info('packet <%s> not handled' % packet)
+        logger.info('packet %s not handled' % packet)
 
 
 @asyncio.coroutine

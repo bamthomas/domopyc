@@ -44,8 +44,8 @@ class AsyncRedisSubscriber(object):
         yield from self.subscriber.subscribe([self.pubsub_key])
 
     def start(self, for_n_messages=0):
-        predicate = AsyncRedisSubscriber.infinite_loop if for_n_messages == 0 else AsyncRedisSubscriber.wait_value(
-            for_n_messages)
+        predicate = AsyncRedisSubscriber.infinite_loop if for_n_messages == 0 \
+            else AsyncRedisSubscriber.wait_value(for_n_messages)
         self.message_loop_task = asyncio.async(self.message_loop(predicate))
         return self
 
