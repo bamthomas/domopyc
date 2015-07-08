@@ -9,7 +9,8 @@ from aiohttp import web
 import aiohttp_jinja2
 import aiomysql
 import asyncio_redis
-from daq.rfxcom_emiter_receiver import RFXCOM_KEY, create_publisher
+from daq.publishers.redis_publisher import RedisPublisher
+from daq.rfxcom_emiter_receiver import RFXCOM_KEY, create_publisher, RFXCOM_KEY_CMD
 from iso8601 import iso8601
 import jinja2
 from daq.current_cost_sensor import CURRENT_COST_KEY
@@ -85,6 +86,17 @@ def conso_temps_reel(_):
 @aiohttp_jinja2.template('commandes.j2')
 def commandes(_):
     return TITLE_AND_CONFIG
+@aiohttp_jinja2.template('commandes.j2')
+def commandes_add(request):
+    parameters = yield from request.post()
+    return TITLE_AND_CONFIG
+@aiohttp_jinja2.template('commandes.j2')
+def command_execute(request):
+    value = request.match_info['value']
+    code_device = request.match_info['code_device']
+    yield from request.app['redis_cmd_publisher'].publish({"code_device": code_device, "value": value})
+    return TITLE_AND_CONFIG
+
 
 @asyncio.coroutine
 def power_history(request):
@@ -120,6 +132,7 @@ def init_frontend(aio_loop, mysql_pool=None):
     mysql_pool_local = mysql_pool if mysql_pool is not None else (yield from create_mysql_pool())
     app = web.Application(loop=aio_loop)
     app['current_cost_service'] = CurrentCostDatabaseReader(mysql_pool_local, full_hours_start=time(7), full_hours_stop=time(23))
+    app['redis_cmd_publisher'] = RedisPublisher((yield from create_redis_pool()), RFXCOM_KEY_CMD)
 
     app.router.add_static(prefix='/static', path='static')
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader('templates'))
@@ -131,6 +144,8 @@ def init_frontend(aio_loop, mysql_pool=None):
     app.router.add_route('GET', '/menu/conso_electrique', conso_electrique)
     app.router.add_route('GET', '/menu/conso_temps_reel', conso_temps_reel)
     app.router.add_route('GET', '/menu/commandes', commandes)
+    app.router.add_route('GET', '/menu/commandes/execute/{code_device}/{value}', command_execute)
+    app.router.add_route('POST', '/menu/commandes/add', commandes_add)
     app.router.add_route('GET', '/power/history', power_history)
     app.router.add_route('GET', '/power/day/{iso_date}', power_by_day)
     app.router.add_route('GET', '/power/costs/{since}', power_costs)
