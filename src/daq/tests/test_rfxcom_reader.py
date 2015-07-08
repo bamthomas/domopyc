@@ -5,8 +5,9 @@ from json import loads
 import binascii
 from daq import rfxcom_emiter_receiver
 from daq.publishers.redis_publisher import RedisPublisher
-from daq.rfxcom_emiter_receiver import RfxTrx433e
+from daq.rfxcom_emiter_receiver import RfxTrx433e, RfxTrx433eMessageHandler, RFXCOM_KEY_CMD
 from rfxcom.protocol.base import BasePacket
+from subscribers.redis_toolbox import AsyncRedisSubscriber
 from test_utils.ut_async import async_coro, DummySerial
 from test_utils.ut_redis import WithRedis
 
@@ -33,17 +34,20 @@ class TestRfxTrx433e(WithRedis):
              'battery_signal_level': 128, 'signal_strength': 128, 'id': '0xBB02',
              'sub_type_name': 'THGN122/123, THGN132, THGR122/228/238/268'})
 
-        RfxTrx433e(self.serial_device, RedisPublisher(self.connection, rfxcom_emiter_receiver.RFXCOM_KEY)).handle_temp_humidity(packet)
+        RfxTrx433e(self.serial_device, RedisPublisher(self.connection, rfxcom_emiter_receiver.RFXCOM_KEY),
+                   AsyncRedisSubscriber(self.connection, RfxTrx433eMessageHandler(), RFXCOM_KEY_CMD)).handle_temp_humidity(packet)
 
         message = yield from asyncio.wait_for(self.subscriber.next_published(), 1)
         self.assertDictEqual(dict(packet.data, date=rfxcom_emiter_receiver.now().isoformat()), loads(message.value))
 
     @async_coro
     def test_write_data(self):
-        rfxcom_device = RfxTrx433eForTest(None, RedisPublisher(self.connection, rfxcom_emiter_receiver.RFXCOM_KEY))
-        yield from asyncio.sleep(0.1) # beurk
+        subscriber = AsyncRedisSubscriber(self.connection, RfxTrx433eMessageHandler(), RFXCOM_KEY_CMD).start(for_n_messages=1)
+        rfxcom_device = RfxTrx433eForTest(None, RedisPublisher(self.connection, rfxcom_emiter_receiver.RFXCOM_KEY), subscriber)
+
         yield from self.connection.publish(rfxcom_emiter_receiver.RFXCOM_KEY_CMD, '{"code_device": "1234567", "value": "1"}')
-        yield from asyncio.sleep(0.1) # beurk
+        yield from asyncio.wait_for(subscriber.message_loop_task, 2)
+
         self.assertEqual(b'0b1100010123456702010f70', binascii.hexlify(rfxcom_device.rfxcom_transport.data_out.pop()))
 
 
@@ -55,8 +59,8 @@ class RfxTrx433eForTest(RfxTrx433e):
         def write(self, data):
             self.data_out.append(data)
 
-    def __init__(self, device, publisher):
-        super().__init__(device, publisher)
+    def __init__(self, device, publisher, subscriber):
+        super().__init__(device, publisher, subscriber)
 
     def create_transport(self, device, event_loop):
         return RfxTrx433eForTest.MockTransport()

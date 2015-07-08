@@ -7,7 +7,6 @@ import asyncio
 
 from asyncio_redis import ZScoreBoundary
 import asyncio_redis
-from daq import rfxcom_emiter_receiver
 from daq.current_cost_sensor import AsyncCurrentCostReader, DEVICE
 import serial
 from subscribers.toolbox import AverageMemoryMessageHandler
@@ -79,7 +78,7 @@ class RedisAverageMessageHandler(AverageMemoryMessageHandler):
 
 class RedisTimeCappedSubscriber(AsyncRedisSubscriber):
     def __init__(self, redis_pool, indicator_name, max_data_age_in_seconds=0,
-                 pubsub_key=rfxcom_emiter_receiver.RFXCOM_KEY,
+                 pubsub_key="rfxcom",
                  indicator_key='temperature'):
         super().__init__(redis_pool, self, pubsub_key)
         self.indicator_key = indicator_key

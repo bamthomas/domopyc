@@ -1,13 +1,13 @@
 # coding=utf-8
 import asyncio
 from datetime import datetime
-from json import loads
 import logging
 import binascii
+
 from daq.publishers.redis_publisher import RedisPublisher, create_redis_pool
-from iso8601_json import with_iso8601_date
 from rfxcom import protocol
 from rfxcom.transport import AsyncioTransport
+from subscribers.redis_toolbox import AsyncRedisSubscriber
 from tzlocal import get_localzone
 
 root = logging.getLogger()
@@ -30,12 +30,34 @@ def create_publisher():
     redis_conn = yield from create_redis_pool(2)
     return RedisPublisher(redis_conn, RFXCOM_KEY)
 
+@asyncio.coroutine
+def create_subscriber():
+    redis_conn = yield from create_redis_pool(2)
+    return AsyncRedisSubscriber(redis_conn, RfxTrx433eMessageHandler(), RFXCOM_KEY_CMD)
+
+
+class RfxTrx433eMessageHandler(object):
+    def __init__(self):
+        self.rfxcom_transport = None
+
+    def set_rfxcom_transport(self, transport):
+        self.rfxcom_transport = transport
+
+    def handle(self, json_message):
+        if self.rfxcom_transport is not None:
+            # cf http://rfxcmd.eu/?page_id=191
+            self.rfxcom_transport.write(
+                binascii.unhexlify('0B1100010%s020%s0F70' % (json_message['code_device'], json_message['value'])))
+        else:
+            logger.info('cannot send RFXCOM command : rfxcom_transport is not set')
+
 
 class RfxTrx433e(object):
-    def __init__(self, device, publisher, event_loop=asyncio.get_event_loop()):
+    def __init__(self, device, publisher, subscriber, event_loop=asyncio.get_event_loop()):
         self.publisher = publisher
-        asyncio.async(self.subscriber_loop())
         self.rfxcom_transport = self.create_transport(device, event_loop)
+        subscriber.message_handler.set_rfxcom_transport(self.rfxcom_transport)
+        self.subscriber = subscriber
 
     def create_transport(self, device, event_loop):
         return AsyncioTransport(device, event_loop,
@@ -48,24 +70,10 @@ class RfxTrx433e(object):
     def default_callback(self, packet):
         logger.info('packet <%s> not handled' % packet)
 
-    @asyncio.coroutine
-    def subscriber_loop(self):
-        subscriber = yield from self.publisher.redis_conn.start_subscribe()
-        yield from subscriber.subscribe([RFXCOM_KEY_CMD])
-        while True:
-            message_to_send = yield from subscriber.next_published()
-
-            message = loads(message_to_send.value)
-            yield from self.sendLightning2Message(message['code_device'], message['value'])
-
-    @asyncio.coroutine
-    def sendLightning2Message(self, deviceOn7HexChars, onOff):
-        # cf http://rfxcmd.eu/?page_id=191
-        self.rfxcom_transport.write(binascii.unhexlify('0B1100010%s020%s0F70' % (deviceOn7HexChars, onOff)))
 
 @asyncio.coroutine
 def blah():
-    rfxcom = RfxTrx433e(dev_name, (yield from create_publisher()))
+    rfxcom = RfxTrx433e(dev_name, (yield from create_publisher()), (yield from create_subscriber()).start())
     return rfxcom
 
 
