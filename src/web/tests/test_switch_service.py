@@ -20,9 +20,23 @@ class SwitchServiceTest(TestCase):
         self.switch_service = SwichService(self.pool)
 
     @async_coro
+    def tearDown(self):
+        self.pool.close()
+        yield from self.pool.wait_closed()
+
+    @async_coro
     def test_insert_new_switch(self):
         yield from self.switch_service.insert('1234567', 'my new switch')
 
         switches = yield from self.switch_service.get_all()
 
         self.assertEqual({'switches': [{'id': '1234567', 'label': 'my new switch', 'state': 0}]}, switches)
+
+    @async_coro
+    def test_insert_new_switch_bad_id(self):
+        with self.assertRaises(ValueError):
+            yield from self.switch_service.insert('123456', 'too short switch id')
+        with self.assertRaises(ValueError):
+            yield from self.switch_service.insert('12345678', 'too long switch id')
+        with self.assertRaises(ValueError):
+            yield from self.switch_service.insert('ABCDEFG', 'G is not hexadecimal')

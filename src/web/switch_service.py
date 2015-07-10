@@ -1,5 +1,6 @@
 # coding=utf-8
 import asyncio
+import binascii
 
 
 class SwichService(object):
@@ -16,6 +17,9 @@ class SwichService(object):
 
     @asyncio.coroutine
     def insert(self, id, label):
+        int(id, 16)
+        if len(id) != 7:
+            raise ValueError("len of id must be 7 hexa char")
         with (yield from self.db) as conn:
             cur = yield from conn.cursor()
             yield from cur.execute("INSERT INTO domopyc_switch (id, label) VALUES (%s, %s)", (id, label))
