@@ -1,6 +1,5 @@
 # coding=utf-8
 import asyncio
-import binascii
 
 
 class SwichService(object):
@@ -41,3 +40,10 @@ class SwichService(object):
             yield from cur.execute(SwichService.CREATE_TABLE_SQL)
             yield from cur.fetchone()
             yield from cur.close()
+
+    def delete(self, id):
+        with (yield from self.db) as conn:
+            cur = yield from conn.cursor()
+            yield from cur.execute('DELETE FROM domopyc_switch WHERE id=%s', id)
+            yield from cur.close()
+
