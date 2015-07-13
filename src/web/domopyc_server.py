@@ -91,8 +91,12 @@ def commandes(request):
 @aiohttp_jinja2.template('commandes.j2')
 def commandes_add(request):
     parameters = yield from request.post()
-    yield from request.app['switch_service'].insert(parameters["id"], parameters["label"])
-    return TITLE_AND_CONFIG
+    try:
+        yield from request.app['switch_service'].insert(parameters["id"], parameters["label"])
+    except ValueError as e:
+        logger.warn('switch id value is incorrect', e)
+    switches = yield from request.app['switch_service'].get_all()
+    return dict(switches, **TITLE_AND_CONFIG)
 @aiohttp_jinja2.template('commandes.j2')
 def command_execute(request):
     value = request.match_info['value']
