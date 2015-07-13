@@ -34,15 +34,16 @@
                 </div>
             </fieldset>
         </form>
+        {% for switch in switches %}
         <div class="row">
             <div class="pure-u-1-4"></div>
             <div class="pure-u-1-4">
-                Piscine
+                {{ switch.label }}
             </div>
             <div class="pure-u-1-4">
                 <div class="onoffswitch">
-                    <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="07DB0C3">
-                    <label class="onoffswitch-label" for="07DB0C3">
+                    <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="{{ switch.id }}" {% if switch.state == 1 %}checked{% endif %}>
+                    <label class="onoffswitch-label" for="{{ switch.id }}">
                         <span class="onoffswitch-inner"></span>
                         <span class="onoffswitch-switch"></span>
                     </label>
@@ -50,21 +51,6 @@
             </div>
             <div class="pure-u-1-4"></div>
         </div>
-        <div class="row">
-            <div class="pure-u-1-4"></div>
-            <div class="pure-u-1-4">
-                Chauffe-eau
-            </div>
-            <div class="pure-u-1-4">
-                <div class="onoffswitch">
-                    <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="07DB0C2">
-                    <label class="onoffswitch-label" for="07DB0C2">
-                        <span class="onoffswitch-inner"></span>
-                        <span class="onoffswitch-switch"></span>
-                    </label>
-                </div>
-            </div>
-            <div class="pure-u-1-4"></div>
-        </div>
+        {% endfor %}
     </div>
 {% endblock %}
