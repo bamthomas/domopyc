@@ -31,7 +31,7 @@ class SwichService(object):
             yield from cur.execute('SELECT id, label, state FROM domopyc_switch')
             result = yield from cur.fetchall()
             yield from cur.close()
-            return {'switches': [ {'id': row[0], 'label': row[1], 'state': row[2]} for row in result]}
+            return {'switches': [{'id': row[0], 'label': row[1], 'state': row[2]} for row in result]}
 
     @asyncio.coroutine
     def init_table(self):
@@ -41,9 +41,17 @@ class SwichService(object):
             yield from cur.fetchone()
             yield from cur.close()
 
+    @asyncio.coroutine
     def delete(self, id):
         with (yield from self.db) as conn:
             cur = yield from conn.cursor()
             yield from cur.execute('DELETE FROM domopyc_switch WHERE id=%s', id)
             yield from cur.close()
 
+    @asyncio.coroutine
+    def switch(self, id, on_off):
+        with (yield from self.db) as conn:
+            cur = yield from conn.cursor()
+            yield from cur.execute('UPDATE domopyc_switch SET state=%s WHERE ID=%s', (on_off, id))
+            yield from cur.fetchone()
+            yield from cur.close()

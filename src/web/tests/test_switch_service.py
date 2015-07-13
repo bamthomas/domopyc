@@ -39,6 +39,15 @@ class SwitchServiceTest(TestCase):
         self.assertEqual({'switches': []}, (yield from self.switch_service.get_all()))
 
     @async_coro
+    def test_switch_on_off(self):
+        yield from self.switch_service.insert('1234567', 'my new switch')
+
+        yield from self.switch_service.switch('1234567', '1')
+
+        switches = yield from self.switch_service.get_all()
+        self.assertEqual({'switches': [{'id': '1234567', 'label': 'my new switch', 'state': 1}]}, switches)
+
+    @async_coro
     def test_insert_new_switch_bad_id(self):
         with self.assertRaises(ValueError):
             yield from self.switch_service.insert('123456', 'too short switch id')

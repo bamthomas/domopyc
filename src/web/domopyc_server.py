@@ -102,6 +102,7 @@ def command_execute(request):
     value = request.match_info['value']
     code_device = request.match_info['code_device']
     yield from request.app['redis_cmd_publisher'].publish({"code_device": code_device, "value": value})
+    yield from request.app['switch_service'].switch(code_device, value)
     return TITLE_AND_CONFIG
 
 
