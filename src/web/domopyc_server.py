@@ -94,7 +94,7 @@ def commandes_add(request):
     try:
         yield from request.app['switch_service'].insert(parameters["id"], parameters["label"])
     except ValueError as e:
-        logger.warn('switch id value is incorrect', e)
+        logger.exception(e)
     switches = yield from request.app['switch_service'].get_all()
     return dict(switches, **TITLE_AND_CONFIG)
 @aiohttp_jinja2.template('commandes.j2')
