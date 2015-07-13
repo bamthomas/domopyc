@@ -18,24 +18,16 @@
 
         <h2>Commandes</h2>
     </div>
-    <div class="pure-g content">
+    <div class="content">
         <form class="pure-form">
             <fieldset>
-                <div class="pure-g">
-                    <div class="pure-u-5-12">
-                        <input type="text" name="id" placeholder="id (7 hex char)">
-                    </div>
-                    <div class="pure-u-5-12">
-                        <input type="text" name="label" placeholder="label">
-                    </div>
-                    <div class="pure-u-1-12">
-                        <button type="submit" class="button-primary pure-button" formmethod="post" formaction="/menu/commandes/add">Ajouter</button>
-                    </div>
-                </div>
+                <input type="text" name="id" placeholder="id (7 hex char)">
+                <input type="text" name="label" placeholder="label">
+                <button type="submit" class="button-primary pure-button" formmethod="post" formaction="/menu/commandes/add">Ajouter</button>
             </fieldset>
         </form>
         {% for switch in switches %}
-        <div class="row">
+        <div>
             <div class="pure-u-1-4"></div>
             <div class="pure-u-1-4">
                 {{ switch.label }}
