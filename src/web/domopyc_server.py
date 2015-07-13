@@ -86,11 +86,12 @@ def conso_temps_reel(_):
     return TITLE_AND_CONFIG
 @aiohttp_jinja2.template('commandes.j2')
 def commandes(request):
-    return dict(request.app['switch_service'].get_all(), **TITLE_AND_CONFIG)
+    switches = yield from request.app['switch_service'].get_all()
+    return dict(switches, **TITLE_AND_CONFIG)
 @aiohttp_jinja2.template('commandes.j2')
 def commandes_add(request):
     parameters = yield from request.post()
-    request.app['switch_service'].insert(parameters["id"], parameters["label"])
+    yield from request.app['switch_service'].insert(parameters["id"], parameters["label"])
     return TITLE_AND_CONFIG
 @aiohttp_jinja2.template('commandes.j2')
 def command_execute(request):
@@ -135,7 +136,7 @@ def init_frontend(aio_loop, mysql_pool=None):
     app = web.Application(loop=aio_loop)
     app['current_cost_service'] = CurrentCostDatabaseReader(mysql_pool_local, full_hours_start=time(7), full_hours_stop=time(23))
     app['redis_cmd_publisher'] = RedisPublisher((yield from create_redis_pool()), RFXCOM_KEY_CMD)
-    app['switch_service'] = SwichService(mysql_pool)
+    app['switch_service'] = SwichService(mysql_pool_local)
 
     app.router.add_static(prefix='/static', path='static')
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader('templates'))

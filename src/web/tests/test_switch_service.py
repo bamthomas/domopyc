@@ -25,6 +25,10 @@ class SwitchServiceTest(TestCase):
         yield from self.pool.wait_closed()
 
     @async_coro
+    def test_get_all_no_data(self):
+        self.assertEqual({'switches': []}, (yield from self.switch_service.get_all()))
+
+    @async_coro
     def test_insert_and_delete_new_switch(self):
         yield from self.switch_service.insert('1234567', 'my new switch')
 
