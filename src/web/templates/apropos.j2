@@ -1,41 +1,41 @@
 {% extends "index.j2" %}
 
 {% block css %}
-<link rel="stylesheet" href="/static/apropos.css">
+    <link rel="stylesheet" href="/static/apropos.css">
 {% endblock %}
 
 {% block main %}
-<div class="header">
-    <h1>{{ title }}</h1>
+    <div class="header">
+        <h1>{{ title }}</h1>
 
-    <h2>A propos</h2>
-</div>
-<div class="pure-g-r content">
-    <div class="pure-u-1">
-        <p>
-            Site de la maison de "{{ title }}" en <a href="http://purecss.io"><img
-                src="http://purecss.io/img/logo_pure@2x.png" height="30"/></a> et <a
-                href="http://www.highcharts.com"><img
-                src="http://www.highcharts.com/templates/highsoft_bootstrap/assets/images/logo.svg"
-                height="80"/></a>
-        </p>
-
-        <p>
-            Pour le serveur <a href="http://aiohttp.readthedocs.org">aiohttp <img src="http://aiohttp.readthedocs.org/en/v0.16.0/_static/aiohttp-icon-128x128.png"
-                                                                   height="40"/></a>, <a
-                href="http://dev.mysql.com/"><img
-                src="http://dev.mysql.com/common/logos/logo-mysql-110x57.png"/></a> et <a
-                href="http://www.redis.io"><img src="http://download.redis.io/logocontest/82.png" height="40"/></a>
-        </p>
-
-        <p>
-            Pour le backend <a href="https://www.python.org"><img
-                src="https://www.python.org/static/img/python-logo.png" height="40"></a>
-        </p>
-
-        <p>
-            Par <a href="https://twitter.com/bam_thomas">@bam_thomas</a>
-        </p>
+        <h2>A propos</h2>
     </div>
-</div>
+    <div class="pure-g-r content">
+        <div class="pure-u-1">
+            <p>
+                Site de la maison de "{{ title }}" en <a href="https://www.python.org"><img
+                    src="https://www.python.org/static/img/python-logo.png" height="40"></a>
+            </p>
+
+            <p>
+                Pour le site web <a href="http://purecss.io"><img
+                        src="http://purecss.io/img/logo_pure@2x.png" height="30"/></a> et <a
+                    href="http://www.highcharts.com"><img
+                    src="http://giggsol.com/wp-content/uploads/2015/01/highcharts-logo.png"/></a>
+            </p>
+
+            <p>
+                Pour le serveur et backend <a href="http://aiohttp.readthedocs.org">aiohttp <img
+                    src="http://aiohttp.readthedocs.org/en/v0.16.0/_static/aiohttp-icon-128x128.png"
+                    height="40"/></a>, <a
+                    href="http://dev.mysql.com/"><img
+                    src="http://dev.mysql.com/common/logos/logo-mysql-110x57.png"/></a> et <a
+                    href="http://www.redis.io"><img src="http://download.redis.io/logocontest/82.png" height="40"/></a>
+            </p>
+
+            <p>
+                Code : <a href="https://github.com/bamthomas/DomoPyc">bamthomas/DomoPyc</a>
+            </p>
+        </div>
+    </div>
 {% endblock %}
