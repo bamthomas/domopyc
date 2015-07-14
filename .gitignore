@@ -3,3 +3,6 @@ current_cost.iml
 venv
 *.pyc
 *.iml
+build/
+dist/
+*.egg-info

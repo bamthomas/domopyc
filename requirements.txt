@@ -1,9 +1,0 @@
-rfxcom
-asyncio_redis
-iso8601
-tzlocal
-aiomysql
-aiohttp
-aiohttp_jinja2
-# tests
-nose
