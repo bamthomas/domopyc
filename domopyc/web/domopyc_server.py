@@ -41,7 +41,7 @@ def create_redis_pool(nb_conn=1):
 @asyncio.coroutine
 def create_mysql_pool():
     pool = yield from aiomysql.create_pool(host='127.0.0.1', port=3306,
-                                               user='test', password='test', db='test',
+                                               user='domopyc', password='blah', db='domopyc',
                                                loop=asyncio.get_event_loop())
     return pool
 
