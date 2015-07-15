@@ -14,7 +14,7 @@ from aiohttp import web
 from aiohttp.web_ws import WebSocketResponse
 import aiomysql
 from domopyc.daq.publishers.redis_publisher import RedisPublisher
-from domopyc.daq.rfxcom_emiter_receiver import RFXCOM_KEY, create_publisher, RFXCOM_KEY_CMD
+from domopyc.daq.rfxcom_emiter_receiver import RFXCOM_KEY, RFXCOM_KEY_CMD, create_rfxtrx433e
 import jinja2
 from domopyc.daq.current_cost_sensor import CURRENT_COST_KEY
 from domopyc.indicators.filtration_duration import calculate_in_minutes
@@ -131,7 +131,7 @@ def power_costs(request):
 
 @asyncio.coroutine
 def init_backend():
-    daq_rfxcom = yield from create_publisher()
+    daq_rfxcom = yield from create_rfxtrx433e()
     pool_temp_recorder = AsyncRedisSubscriber((yield from create_redis_pool()),
                                               MysqlTemperatureMessageHandler((yield from create_mysql_pool()), 'pool_temperature'),
                                               RFXCOM_KEY).start()

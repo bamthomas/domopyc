@@ -73,11 +73,12 @@ class RfxTrx433e(object):
 
 
 @asyncio.coroutine
-def blah():
-    rfxcom = RfxTrx433e(dev_name, (yield from create_publisher()), (yield from create_subscriber()).start())
-    return rfxcom
+def create_rfxtrx433e():
+    publisher = yield from create_publisher()
+    subscriber = yield from create_subscriber()
+    return RfxTrx433e(dev_name, publisher, subscriber.start())
 
 
 if __name__ == '__main__':
-    rfxcom = asyncio.async(blah())
+    rfxcom = asyncio.async(create_rfxtrx433e())
     asyncio.get_event_loop().run_forever()
