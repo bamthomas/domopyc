@@ -15,6 +15,7 @@ install_requires = [
 
 test_requires = [
     'nose',
+    'asynctest',
     ]
 
 setup(name='domopyc',
