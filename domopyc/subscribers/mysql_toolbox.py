@@ -2,7 +2,7 @@
 import logging
 import asyncio
 
-from subscribers.toolbox import AverageMemoryMessageHandler
+from domopyc.subscribers.toolbox import AverageMemoryMessageHandler
 
 
 logging.basicConfig(format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')

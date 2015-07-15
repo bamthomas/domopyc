@@ -2,8 +2,8 @@
 from unittest import TestCase
 import aiomysql
 import asyncio
-from test_utils.ut_async import async_coro
-from web.switch_service import SwichService
+from domopyc.test_utils.ut_async import async_coro
+from domopyc.web.switch_service import SwichService
 
 
 class SwitchServiceTest(TestCase):

@@ -3,13 +3,13 @@ import asyncio
 from datetime import datetime, timezone
 from json import loads
 import binascii
-from daq import rfxcom_emiter_receiver
-from daq.publishers.redis_publisher import RedisPublisher
-from daq.rfxcom_emiter_receiver import RfxTrx433e, RfxTrx433eMessageHandler, RFXCOM_KEY_CMD
+from domopyc.daq import rfxcom_emiter_receiver
+from domopyc.daq.publishers.redis_publisher import RedisPublisher
+from domopyc.daq.rfxcom_emiter_receiver import RfxTrx433e, RfxTrx433eMessageHandler, RFXCOM_KEY_CMD
 from rfxcom.protocol.base import BasePacket
-from subscribers.redis_toolbox import AsyncRedisSubscriber
-from test_utils.ut_async import async_coro, DummySerial
-from test_utils.ut_redis import WithRedis
+from domopyc.subscribers.redis_toolbox import AsyncRedisSubscriber
+from domopyc.test_utils.ut_async import async_coro, DummySerial
+from domopyc.test_utils.ut_redis import WithRedis
 
 
 class TestRfxTrx433e(WithRedis):

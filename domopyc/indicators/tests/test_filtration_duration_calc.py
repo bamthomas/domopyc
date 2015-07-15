@@ -1,5 +1,5 @@
 import unittest
-from indicators import filtration_duration
+from domopyc.indicators import filtration_duration
 
 
 class TestFiltrationDurationCalc(unittest.TestCase):

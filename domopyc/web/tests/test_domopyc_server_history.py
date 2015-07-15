@@ -5,9 +5,9 @@ from unittest import TestCase
 import aiohttp
 import os
 import aiomysql
-from subscribers.mysql_toolbox import MysqlCurrentCostMessageHandler
-from test_utils.ut_async import async_coro
-from web import domopyc_server
+from domopyc.subscribers.mysql_toolbox import MysqlCurrentCostMessageHandler
+from domopyc.test_utils.ut_async import async_coro
+from domopyc.web import domopyc_server
 
 __author__ = 'bruno'
 

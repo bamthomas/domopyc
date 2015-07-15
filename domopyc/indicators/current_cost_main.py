@@ -1,6 +1,6 @@
 import asyncio
-from daq.current_cost_sensor import AsyncCurrentCostReader, CURRENT_COST_KEY, LOGGER, DEVICE
-from daq.publishers.redis_publisher import RedisPublisher, create_redis_connection
+from domopyc.daq.current_cost_sensor import AsyncCurrentCostReader, CURRENT_COST_KEY, LOGGER, DEVICE
+from domopyc.daq.publishers.redis_publisher import RedisPublisher, create_redis_connection
 import serial
 
 

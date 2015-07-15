@@ -3,7 +3,7 @@ from json import loads
 import asyncio
 from operator import itemgetter
 from statistics import mean
-from iso8601_json import with_iso8601_date
+from domopyc.iso8601_json import with_iso8601_date
 from tzlocal import get_localzone
 
 

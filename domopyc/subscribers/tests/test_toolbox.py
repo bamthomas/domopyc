@@ -3,10 +3,10 @@ import asyncio
 from datetime import datetime, timezone
 from json import dumps
 import unittest
-from iso8601_json import Iso8601DateEncoder
-from subscribers import toolbox
-from subscribers.toolbox import AverageMemoryMessageHandler
-from test_utils.ut_async import async_coro
+from domopyc.iso8601_json import Iso8601DateEncoder
+from domopyc.subscribers import toolbox
+from domopyc.subscribers.toolbox import AverageMemoryMessageHandler
+from domopyc.test_utils.ut_async import async_coro
 
 
 class AverageMessageHandlerForTest(AverageMemoryMessageHandler):

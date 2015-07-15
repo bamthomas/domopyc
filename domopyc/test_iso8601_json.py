@@ -3,7 +3,7 @@ from json import dumps, loads
 from unittest import TestCase
 from decimal import Decimal
 
-from iso8601_json import Iso8601DateEncoder, with_iso8601_date
+from domopyc.iso8601_json import Iso8601DateEncoder, with_iso8601_date
 
 
 class TestIso8601(TestCase):

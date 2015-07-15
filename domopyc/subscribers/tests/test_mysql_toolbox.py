@@ -3,11 +3,11 @@ from json import dumps
 import unittest
 import asyncio
 import aiomysql
-from iso8601_json import Iso8601DateEncoder
+from domopyc.iso8601_json import Iso8601DateEncoder
 
-from subscribers import redis_toolbox
-from subscribers.mysql_toolbox import MysqlCurrentCostMessageHandler, MysqlTemperatureMessageHandler
-from test_utils.ut_async import async_coro
+from domopyc.subscribers import redis_toolbox
+from domopyc.subscribers.mysql_toolbox import MysqlCurrentCostMessageHandler, MysqlTemperatureMessageHandler
+from domopyc.test_utils.ut_async import async_coro
 
 
 class MysqlAverageMessageHandlerTest(unittest.TestCase):

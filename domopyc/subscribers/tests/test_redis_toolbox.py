@@ -3,14 +3,14 @@ import asyncio
 from json import dumps, loads
 import unittest
 from datetime import datetime, timezone, timedelta
-from daq import rfxcom_emiter_receiver
-from daq.current_cost_sensor import CURRENT_COST_KEY
+from domopyc.daq import rfxcom_emiter_receiver
+from domopyc.daq.current_cost_sensor import CURRENT_COST_KEY
 
-from iso8601_json import Iso8601DateEncoder, with_iso8601_date
-from subscribers import redis_toolbox
-from subscribers.redis_toolbox import AsyncRedisSubscriber, AverageMemoryMessageHandler, RedisAverageMessageHandler, RedisTimeCappedSubscriber
-from test_utils.ut_async import async_coro, TestMessageHandler, TestExceptionMessageHandler
-from test_utils.ut_redis import WithRedis
+from domopyc.iso8601_json import Iso8601DateEncoder, with_iso8601_date
+from domopyc.subscribers import redis_toolbox
+from domopyc.subscribers.redis_toolbox import AsyncRedisSubscriber, AverageMemoryMessageHandler, RedisAverageMessageHandler, RedisTimeCappedSubscriber
+from domopyc.test_utils.ut_async import async_coro, TestMessageHandler, TestExceptionMessageHandler
+from domopyc.test_utils.ut_redis import WithRedis
 
 
 class RedisSubscribeLoopTest(WithRedis):

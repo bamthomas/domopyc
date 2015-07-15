@@ -3,26 +3,27 @@ import asyncio
 from datetime import datetime, timedelta, time
 from json import dumps
 import logging
-import aiohttp
+
+import aiohttp_jinja2
+
+import asyncio_redis
+from iso8601 import iso8601
+from tzlocal import get_localzone
 
 from aiohttp import web
-import aiohttp_jinja2
+from aiohttp.web_ws import WebSocketResponse
 import aiomysql
-import asyncio_redis
-from daq.publishers.redis_publisher import RedisPublisher
-from daq.rfxcom_emiter_receiver import RFXCOM_KEY, create_publisher, RFXCOM_KEY_CMD
-from iso8601 import iso8601
+from domopyc.daq.publishers.redis_publisher import RedisPublisher
+from domopyc.daq.rfxcom_emiter_receiver import RFXCOM_KEY, create_publisher, RFXCOM_KEY_CMD
 import jinja2
-from daq.current_cost_sensor import CURRENT_COST_KEY
-from indicators import filtration_duration
-from indicators.filtration_duration import calculate_in_minutes
-from iso8601_json import Iso8601DateEncoder
-from tzlocal import get_localzone
-from subscribers.mysql_toolbox import MysqlTemperatureMessageHandler
-from subscribers.redis_toolbox import AsyncRedisSubscriber
-from web.configuration import PARAMETERS
-from web.current_cost_mysql_service import CurrentCostDatabaseReader
-from web.switch_service import SwichService
+from domopyc.daq.current_cost_sensor import CURRENT_COST_KEY
+from domopyc.indicators.filtration_duration import calculate_in_minutes
+from domopyc.iso8601_json import Iso8601DateEncoder
+from domopyc.subscribers.mysql_toolbox import MysqlTemperatureMessageHandler
+from domopyc.subscribers.redis_toolbox import AsyncRedisSubscriber
+from domopyc.web.configuration import PARAMETERS
+from domopyc.web.current_cost_mysql_service import CurrentCostDatabaseReader
+from domopyc.web.switch_service import SwichService
 
 now = datetime.now
 root = logging.getLogger()
@@ -50,7 +51,7 @@ def stream(request):
     redis_pool = yield from create_redis_pool(1)
     subscriber = yield from redis_pool.start_subscribe()
     yield from subscriber.subscribe([CURRENT_COST_KEY])
-    ws = web.WebSocketResponse()
+    ws = WebSocketResponse()
     ws.start(request)
     continue_loop = True
     while continue_loop:

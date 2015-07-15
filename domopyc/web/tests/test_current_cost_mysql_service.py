@@ -4,11 +4,11 @@ from decimal import Decimal
 from unittest import TestCase
 
 import aiomysql
-from subscribers.mysql_toolbox import MysqlCurrentCostMessageHandler
-from test_utils.ut_async import async_coro
+from domopyc.subscribers.mysql_toolbox import MysqlCurrentCostMessageHandler
+from domopyc.test_utils.ut_async import async_coro
 from tzlocal import get_localzone
-from web import current_cost_mysql_service
-from web.current_cost_mysql_service import CurrentCostDatabaseReader, merge_full_and_empty_hours
+from domopyc.web import current_cost_mysql_service
+from domopyc.web.current_cost_mysql_service import CurrentCostDatabaseReader, merge_full_and_empty_hours
 
 
 class GetCurrentCostData(TestCase):

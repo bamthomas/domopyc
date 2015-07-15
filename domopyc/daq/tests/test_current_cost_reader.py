@@ -2,9 +2,9 @@
 from datetime import datetime
 import unittest
 import asyncio
-from daq import current_cost_sensor
-from daq.current_cost_sensor import AsyncCurrentCostReader
-from test_utils.ut_async import async_coro, TestMessageHandler, DummySerial
+from domopyc.daq import current_cost_sensor
+from domopyc.daq.current_cost_sensor import AsyncCurrentCostReader
+from domopyc.test_utils.ut_async import async_coro, TestMessageHandler, DummySerial
 
 
 class CurrentCostReaderTest(unittest.TestCase):

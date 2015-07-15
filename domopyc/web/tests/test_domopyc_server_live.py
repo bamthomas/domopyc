@@ -1,11 +1,11 @@
 import asyncio
 
 import aiohttp
-from daq.current_cost_sensor import CURRENT_COST_KEY
+from domopyc.daq.current_cost_sensor import CURRENT_COST_KEY
 import os
-from test_utils.ut_async import async_coro
-from test_utils.ut_redis import WithRedis
-from web import domopyc_server
+from domopyc.test_utils.ut_async import async_coro
+from domopyc.test_utils.ut_redis import WithRedis
+from domopyc.web import domopyc_server
 
 __author__ = 'bruno'
 

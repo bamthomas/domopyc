@@ -4,10 +4,10 @@ from datetime import datetime
 import logging
 import binascii
 
-from daq.publishers.redis_publisher import RedisPublisher, create_redis_pool
+from domopyc.daq.publishers.redis_publisher import RedisPublisher, create_redis_pool
 from rfxcom import protocol
 from rfxcom.transport import AsyncioTransport
-from subscribers.redis_toolbox import AsyncRedisSubscriber
+from domopyc.subscribers.redis_toolbox import AsyncRedisSubscriber
 from tzlocal import get_localzone
 
 root = logging.getLogger()
