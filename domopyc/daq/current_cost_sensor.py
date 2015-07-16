@@ -6,7 +6,9 @@ from logging.handlers import SysLogHandler
 import xml.etree.cElementTree as ET
 
 from serial import FileLike
+import serial
 from tzlocal import get_localzone
+from domopyc.daq.publishers.redis_publisher import create_redis_connection, RedisPublisher
 
 CURRENT_COST = 'current_cost'
 
@@ -53,3 +55,19 @@ class AsyncCurrentCostReader(FileLike):
 
     def remove_reader(self):
         self.event_loop.remove_reader(self.serial_drv.fd)
+
+
+if __name__ == '__main__':
+    serial_drv = serial.Serial(DEVICE, baudrate=57600,
+                               bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,
+                               timeout=10)
+
+    loop = asyncio.get_event_loop()
+    LOGGER.info("create redis connection")
+    redis_conn = loop.run_until_complete(create_redis_connection())
+
+    LOGGER.info("create reader")
+    reader = AsyncCurrentCostReader(serial_drv, RedisPublisher(redis_conn, CURRENT_COST_KEY), loop)
+
+    LOGGER.info("launch main loop")
+    loop.run_forever()
