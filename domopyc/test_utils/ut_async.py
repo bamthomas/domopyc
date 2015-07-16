@@ -43,6 +43,14 @@ class TestMessageHandler(object):
         yield from self.queue.put(message)
 
 
+class QueuePublisher(object):
+    queue = Queue()
+
+    @asyncio.coroutine
+    def publish(self, event):
+        yield from self.queue.put(event)
+
+
 class TestExceptionMessageHandler(object):
     queue = Queue()
 

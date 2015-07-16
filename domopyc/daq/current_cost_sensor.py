@@ -35,7 +35,7 @@ class AsyncCurrentCostReader(FileLike):
 
     def read_callback(self):
         LOGGER.debug('reading line from sensor')
-        line = self.readline()
+        line = self.readline().decode().strip()
         LOGGER.debug('line : %s' % line)
         if line:
             try:
@@ -43,7 +43,7 @@ class AsyncCurrentCostReader(FileLike):
                 power_element = xml_data.find('ch1/watts')
                 if power_element is not None:
                     power = int(power_element.text)
-                    asyncio.async(self.publisher.handle({'date': now().isoformat(), 'watt': power,
+                    asyncio.async(self.publisher.publish({'date': now().isoformat(), 'watt': power,
                                                          'temperature': float(xml_data.find('tmpr').text)}))
             except ET.ParseError as xml_parse_error:
                 LOGGER.exception(xml_parse_error)

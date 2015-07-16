@@ -11,7 +11,7 @@ def create_redis_pool(size):
     pool = yield from asyncio_redis.Pool.create(host='localhost', port=6379, poolsize=size)
     return pool
 
-
+@asyncio.coroutine
 def create_redis_connection():
     connection = yield from asyncio_redis.Connection.create(host='localhost', port=6379)
     return connection

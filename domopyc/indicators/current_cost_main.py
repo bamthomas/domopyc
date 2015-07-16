@@ -9,10 +9,10 @@ if __name__ == '__main__':
                                bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,
                                timeout=10)
 
-    LOGGER.info("create redis connection")
-    redis_conn = asyncio.wait(asyncio.async(create_redis_connection()))
-
     loop = asyncio.get_event_loop()
+    LOGGER.info("create redis connection")
+    redis_conn = loop.run_until_complete(create_redis_connection())
+
     LOGGER.info("create reader")
     reader = AsyncCurrentCostReader(serial_drv, RedisPublisher(redis_conn, CURRENT_COST_KEY), loop)
 
