@@ -45,7 +45,6 @@ def create_mysql_pool():
                                                loop=asyncio.get_event_loop())
     return pool
 
-
 @asyncio.coroutine
 def stream(request):
     redis_pool = yield from create_redis_pool(1)
@@ -65,11 +64,9 @@ def stream(request):
 
     return ws
 
-
 @aiohttp_jinja2.template('index.j2')
 def home(_):
     return TITLE_AND_CONFIG
-
 
 @aiohttp_jinja2.template('piscine.j2')
 def piscine(request):
@@ -79,16 +76,20 @@ def piscine(request):
 @aiohttp_jinja2.template('apropos.j2')
 def apropos(_):
     return TITLE_AND_CONFIG
+
 @aiohttp_jinja2.template('conso_electrique.j2')
 def conso_electrique(_):
     return TITLE_AND_CONFIG
+
 @aiohttp_jinja2.template('conso_temps_reel.j2')
 def conso_temps_reel(_):
     return TITLE_AND_CONFIG
+
 @aiohttp_jinja2.template('commandes.j2')
 def commandes(request):
     switches = yield from request.app['switch_service'].get_all()
     return dict(switches, **TITLE_AND_CONFIG)
+
 @aiohttp_jinja2.template('commandes.j2')
 def commandes_add(request):
     parameters = yield from request.post()
@@ -98,6 +99,7 @@ def commandes_add(request):
         logger.exception(e)
     switches = yield from request.app['switch_service'].get_all()
     return dict(switches, **TITLE_AND_CONFIG)
+
 @aiohttp_jinja2.template('commandes.j2')
 def command_execute(request):
     value = request.match_info['value']
@@ -105,7 +107,6 @@ def command_execute(request):
     yield from request.app['redis_cmd_publisher'].publish({"code_device": code_device, "value": value})
     yield from request.app['switch_service'].switch(code_device, value)
     return TITLE_AND_CONFIG
-
 
 @asyncio.coroutine
 def power_history(request):
@@ -130,14 +131,7 @@ def power_costs(request):
 
 
 @asyncio.coroutine
-def init_backend():
-    daq_rfxcom = yield from create_rfxtrx433e()
-    pool_temp_recorder = AsyncRedisSubscriber((yield from create_redis_pool()),
-                                              MysqlTemperatureMessageHandler((yield from create_mysql_pool()), 'pool_temperature'),
-                                              RFXCOM_KEY).start()
-
-@asyncio.coroutine
-def init_frontend(aio_loop, mysql_pool=None):
+def init(aio_loop, mysql_pool=None):
     mysql_pool_local = mysql_pool if mysql_pool is not None else (yield from create_mysql_pool())
     app = web.Application(loop=aio_loop)
     app['current_cost_service'] = CurrentCostDatabaseReader(mysql_pool_local, full_hours_start=time(7), full_hours_stop=time(23))
@@ -163,10 +157,3 @@ def init_frontend(aio_loop, mysql_pool=None):
     srv = yield from aio_loop.create_server(app.make_handler(), '0.0.0.0', 8080)
     print("Server started at http://0.0.0.0:8080")
     return srv
-
-
-if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(init_frontend(loop))
-    asyncio.async(init_backend())
-    loop.run_forever()

@@ -31,5 +31,10 @@ setup(name='domopyc',
       install_requires=install_requires,
       tests_require=test_requires,
       test_suite="nose.collector",
+      entry_points = {
+              'console_scripts': [
+                  'domopyc = domopyc.domopyc:run_application'
+              ]
+          }
       )
 

@@ -19,7 +19,7 @@ class GetLiveData(WithRedis):
                                                             user='test', password='test', db='test',
                                                             loop=asyncio.get_event_loop())
         os.chdir(os.path.dirname(os.path.realpath(__file__)) + '/..')
-        self.server = yield from domopyc_server.init_frontend(asyncio.get_event_loop(), mysql_pool=self.pool)
+        self.server = yield from domopyc_server.init(asyncio.get_event_loop(), mysql_pool=self.pool)
 
     @async_coro
     def tearDown(self):
