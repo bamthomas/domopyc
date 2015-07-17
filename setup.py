@@ -33,7 +33,7 @@ setup(name='domopyc',
       test_suite="nose.collector",
       entry_points = {
               'console_scripts': [
-                  'domopyc = domopyc.domopyc:run_application'
+                  'domopyc = domopyc.domopyc_main:run_application'
               ]
           }
       )

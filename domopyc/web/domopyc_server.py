@@ -49,7 +49,7 @@ def create_mysql_pool():
 def stream(request):
     redis_pool = yield from create_redis_pool(1)
     subscriber = yield from redis_pool.start_subscribe()
-    yield from subscriber.subscribe([CURRENT_COST_KEY])
+    yield from subscriber.subscribe([RFXCOM_KEY])
     ws = WebSocketResponse()
     ws.start(request)
     continue_loop = True
@@ -138,8 +138,8 @@ def init(aio_loop, mysql_pool=None):
     app['redis_cmd_publisher'] = RedisPublisher((yield from create_redis_pool()), RFXCOM_KEY_CMD)
     app['switch_service'] = SwichService(mysql_pool_local)
 
-    app.router.add_static(prefix='/static', path='static')
-    aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader('templates'))
+    app.router.add_static(prefix='/static', path='web/static')
+    aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader('web/templates'))
 
     app.router.add_route('GET', '/livedata/power', stream)
     app.router.add_route('GET', '/', home)
