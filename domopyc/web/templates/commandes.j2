@@ -28,10 +28,8 @@
         </form>
         {% for switch in switches %}
         <div>
-            <div class="pure-u-1-4"></div>
-            <div class="pure-u-1-4">
-                {{ switch.label }}
-            </div>
+            <div class="pure-u-1-4">{{ switch.label }}</div>
+            <div class="pure-u-1-4">(id: {{ switch.id }})</div>
             <div class="pure-u-1-4">
                 <div class="onoffswitch">
                     <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="{{ switch.id }}" {% if switch.state == 1 %}checked{% endif %}>
