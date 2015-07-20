@@ -18,8 +18,7 @@ class GetLiveData(WithRedis):
         self.pool = yield from aiomysql.create_pool(host='127.0.0.1', port=3306,
                                                             user='test', password='test', db='test',
                                                             loop=asyncio.get_event_loop())
-        os.chdir(os.path.dirname(os.path.realpath(__file__)) + '/..')
-        self.server = yield from domopyc_server.init(asyncio.get_event_loop(), mysql_pool=self.pool)
+        self.server = yield from domopyc_server.init(asyncio.get_event_loop(), mysql_pool=self.pool, port=12345)
 
     @async_coro
     def tearDown(self):
@@ -29,7 +28,7 @@ class GetLiveData(WithRedis):
 
     @async_coro
     def test_live_data(self):
-        ws = yield from aiohttp.ws_connect('http://localhost:8080/livedata/power')
+        ws = yield from aiohttp.ws_connect('http://localhost:12345/livedata/power')
         yield from self.connection.publish(CURRENT_COST_KEY, 'a message')
         message = yield from asyncio.wait_for(ws.receive(), 2)
 

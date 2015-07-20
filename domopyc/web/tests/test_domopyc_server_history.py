@@ -20,7 +20,7 @@ class RedisGetDataOfDay(TestCase):
                                                     user='test', password='test', db='test',
                                                     loop=asyncio.get_event_loop())
 
-        self.server = yield from domopyc_server.init(asyncio.get_event_loop(), self.pool)
+        self.server = yield from domopyc_server.init(asyncio.get_event_loop(), self.pool, port=12345)
         self.message_handler = MysqlCurrentCostMessageHandler(self.pool)
         with (yield from self.pool) as conn:
             cur = yield from conn.cursor()
@@ -37,7 +37,7 @@ class RedisGetDataOfDay(TestCase):
     def test_get_current_cost_history_one_line(self):
         yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 0, 0, tzinfo=timezone.utc), 'watt': 123, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
 
-        response = yield from aiohttp.request('GET', 'http://127.0.0.1:8080/power/history')
+        response = yield from aiohttp.request('GET', 'http://127.0.0.1:12345/power/history')
         json_response = yield from response.json()
 
         self.assertEqual(1, len(json_response['data']))
@@ -48,7 +48,7 @@ class RedisGetDataOfDay(TestCase):
         yield from self.message_handler.save({'date': datetime(2015, 5, 29, 12, 10, 0), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.6})
         yield from self.message_handler.save({'date': datetime(2015, 5, 30, 23, 20, 0), 'watt': 500, 'minutes': 180, 'nb_data': 120, 'temperature': 20.2})
 
-        response = yield from aiohttp.request('GET', 'http://127.0.0.1:8080/power/day/%s' % datetime(2015, 5, 30, 0, 0).isoformat())
+        response = yield from aiohttp.request('GET', 'http://127.0.0.1:12345/power/day/%s' % datetime(2015, 5, 30, 0, 0).isoformat())
         json_response = yield from response.json()
 
         self.assertEqual(1, len(json_response['day_data']))

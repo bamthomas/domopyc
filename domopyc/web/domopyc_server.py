@@ -3,6 +3,7 @@ import asyncio
 from datetime import datetime, timedelta, time
 from json import dumps
 import logging
+import os
 
 import aiohttp_jinja2
 
@@ -49,7 +50,7 @@ def create_mysql_pool():
 def stream(request):
     redis_pool = yield from create_redis_pool(1)
     subscriber = yield from redis_pool.start_subscribe()
-    yield from subscriber.subscribe([RFXCOM_KEY])
+    yield from subscriber.subscribe([CURRENT_COST_KEY])
     ws = WebSocketResponse()
     ws.start(request)
     continue_loop = True
@@ -131,15 +132,15 @@ def power_costs(request):
 
 
 @asyncio.coroutine
-def init(aio_loop, mysql_pool=None):
+def init(aio_loop, mysql_pool=None, port=8080):
     mysql_pool_local = mysql_pool if mysql_pool is not None else (yield from create_mysql_pool())
     app = web.Application(loop=aio_loop)
     app['current_cost_service'] = CurrentCostDatabaseReader(mysql_pool_local, full_hours_start=time(7), full_hours_stop=time(23))
     app['redis_cmd_publisher'] = RedisPublisher((yield from create_redis_pool()), RFXCOM_KEY_CMD)
     app['switch_service'] = SwichService(mysql_pool_local)
 
-    app.router.add_static(prefix='/static', path='web/static')
-    aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader('web/templates'))
+    app.router.add_static(prefix='/static', path=os.path.dirname(__file__) + '/static')
+    aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(os.path.dirname(__file__) + '/templates'))
 
     app.router.add_route('GET', '/livedata/power', stream)
     app.router.add_route('GET', '/', home)
@@ -154,6 +155,7 @@ def init(aio_loop, mysql_pool=None):
     app.router.add_route('GET', '/power/day/{iso_date}', power_by_day)
     app.router.add_route('GET', '/power/costs/{since}', power_costs)
 
-    srv = yield from aio_loop.create_server(app.make_handler(), '0.0.0.0', 8080)
-    print("Server started at http://0.0.0.0:8080")
+    listening_ip = '0.0.0.0'
+    srv = yield from aio_loop.create_server(app.make_handler(), listening_ip, port)
+    logger.info("Domopyc web server started at http://%s:%s" % (listening_ip, port))
     return srv
