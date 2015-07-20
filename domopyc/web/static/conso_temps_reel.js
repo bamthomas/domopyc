@@ -39,7 +39,7 @@ $(document).ready(function () {
         ]
     });
 
-    var socket = new WebSocket("ws://localhost:8080/livedata/power");
+    var socket = new WebSocket("ws://" + window.location.host + "/livedata/power");
 
     socket.onmessage = function (msg) {
         var item = JSON.parse(msg.data);
