@@ -17,7 +17,7 @@ class SwitchServiceTest(asynctest.TestCase):
             yield from cur.execute("drop table if EXISTS domopyc_switch")
             yield from cur.close()
 
-            self.switch_service = SwichService(self.pool)
+        self.switch_service = SwichService(self.pool)
 
     @asyncio.coroutine
     def tearDown(self):
