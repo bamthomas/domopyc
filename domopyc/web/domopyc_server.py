@@ -132,12 +132,11 @@ def power_costs(request):
 
 
 @asyncio.coroutine
-def init(aio_loop, mysql_pool=None, port=8080):
-    mysql_pool_local = mysql_pool if mysql_pool is not None else (yield from create_mysql_pool())
+def init(aio_loop, mysql_pool, port=8080):
     app = web.Application(loop=aio_loop)
-    app['current_cost_service'] = CurrentCostDatabaseReader(mysql_pool_local, full_hours_start=time(7), full_hours_stop=time(23))
+    app['current_cost_service'] = CurrentCostDatabaseReader(mysql_pool, full_hours_start=time(7), full_hours_stop=time(23))
     app['redis_cmd_publisher'] = RedisPublisher((yield from create_redis_pool()), RFXCOM_KEY_CMD)
-    app['switch_service'] = SwichService(mysql_pool_local)
+    app['switch_service'] = SwichService(mysql_pool)
 
     app.router.add_static(prefix='/static', path=os.path.dirname(__file__) + '/static')
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(os.path.dirname(__file__) + '/templates'))
