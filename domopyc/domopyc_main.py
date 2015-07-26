@@ -3,7 +3,7 @@ from domopyc.daq.rfxcom_emiter_receiver import create_rfxtrx433e, RFXCOM_KEY
 from domopyc.subscribers.mysql_toolbox import MysqlTemperatureMessageHandler
 from domopyc.subscribers.redis_toolbox import AsyncRedisSubscriber, create_redis_pool
 from domopyc.web.domopyc_server import init, create_mysql_pool
-from domopyc.web.switch_service import KeepAliveService
+from domopyc.web.keep_alive_service import KeepAliveService
 
 
 @asyncio.coroutine
