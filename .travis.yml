@@ -5,9 +5,9 @@ python:
 services:
   - redis-server
 before_install:
-  - mysql -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('test');"
   - mysql -e "create database IF NOT EXISTS test;" -uroot
   - mysql -e "grant all on test.* to 'test' identified by 'test';" -uroot
+  - mysql -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('test');"
 install: 
 - "python setup.py develop"
 script: python setup.py test 
