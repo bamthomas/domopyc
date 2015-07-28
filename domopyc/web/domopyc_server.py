@@ -50,7 +50,7 @@ def create_mysql_pool():
 def stream(request):
     redis_pool = yield from create_redis_pool(1)
     subscriber = yield from redis_pool.start_subscribe()
-    yield from subscriber.subscribe([CURRENT_COST_KEY])
+    yield from subscriber.subscribe([RFXCOM_KEY])
     ws = WebSocketResponse()
     ws.start(request)
     continue_loop = True
