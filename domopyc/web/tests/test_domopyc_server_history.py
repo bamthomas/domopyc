@@ -15,7 +15,6 @@ __author__ = 'bruno'
 class RedisGetDataOfDay(TestCase):
     @async_coro
     def setUp(self):
-        os.chdir(os.path.dirname(os.path.realpath(__file__)) + '/..')
         self.pool = yield from aiomysql.create_pool(host='127.0.0.1', port=3306,
                                                     user='test', password='test', db='test',
                                                     loop=asyncio.get_event_loop())

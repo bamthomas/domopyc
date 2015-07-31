@@ -130,6 +130,13 @@ def power_costs(request):
     return web.Response(body=dumps({'data': data}, cls=Iso8601DateEncoder).encode(),
                         headers={'Content-Type': 'application/json'})
 
+@aiohttp_jinja2.template('login.j2')
+def auth(_):
+    return {'title': PARAMETERS['title']}
+
+@asyncio.coroutine
+def login(request):
+    return None
 
 @asyncio.coroutine
 def init(aio_loop, mysql_pool, port=8080):
@@ -141,6 +148,8 @@ def init(aio_loop, mysql_pool, port=8080):
     app.router.add_static(prefix='/static', path=os.path.dirname(__file__) + '/static')
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(os.path.dirname(__file__) + '/templates'))
 
+    app.router.add_route('GET', '/auth', auth)
+    app.router.add_route('GET', '/login', login)
     app.router.add_route('GET', '/livedata/power', stream)
     app.router.add_route('GET', '/', home)
     app.router.add_route('GET', '/menu/piscine', piscine)

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domopyc - {{ title }}</title>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
+
+    <link rel="stylesheet" href="/static/domopyc.css">
+    <!--[if lte IE 8]>
+    <link rel="stylesheet" href="/static/side-menu-old-ie.css">
+    <![endif]-->
+    <!--[if gt IE 8]><!-->
+    <link rel="stylesheet" href="/static/side-menu.css">
+    <!--<![endif]-->
+    <!--[if lt IE 9]>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7/html5shiv.js"></script>
+    <![endif]-->
+</head>
+
+<body>
+<div class="pure-g-r content">
+    <div class="pure-u-1">
+        <form class="pure-form pure-form-stacked">
+            <input id="login" type="text" placeholder="identifiant">
+            <input id="password" type="password" placeholder="mot de passe">
+            <button type="submit" formaction="login" formmethod="post" class="pure-button pure-button-primary">Se connecter</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>
