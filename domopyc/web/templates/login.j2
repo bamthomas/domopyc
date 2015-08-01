@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
 
     <link rel="stylesheet" href="/static/domopyc.css">
+    <link rel="stylesheet" href="/static/pure-extras.css">
     <!--[if lte IE 8]>
     <link rel="stylesheet" href="/static/side-menu-old-ie.css">
     <![endif]-->
@@ -24,6 +25,9 @@
         <form class="pure-form pure-form-stacked">
             <input id="login" type="text" placeholder="identifiant">
             <input id="password" type="password" placeholder="mot de passe">
+            {% if error is defined %}
+            <div class="pure-alert pure-alert-error">{{ error }}</div>
+            {% endif %}
             <button type="submit" formaction="login" formmethod="post" class="pure-button pure-button-primary">Se connecter</button>
         </form>
     </div>

@@ -131,25 +131,29 @@ def power_costs(request):
                         headers={'Content-Type': 'application/json'})
 
 @aiohttp_jinja2.template('login.j2')
-def auth(_):
-    return {'title': PARAMETERS['title']}
+def auth(request):
+    response_model = {'title': PARAMETERS['title']}
+    if 'error' in request.GET:
+        response_model['error'] = 'identifiant ou mot de passe incorrect'
+    return response_model
 
 @asyncio.coroutine
 def login(request):
-    return None
+    return web.HTTPFound('/auth?error=authfail')
 
 @asyncio.coroutine
-def init(aio_loop, mysql_pool, port=8080):
+def init(aio_loop, mysql_pool, port=8080, config=None):
     app = web.Application(loop=aio_loop)
     app['current_cost_service'] = CurrentCostDatabaseReader(mysql_pool, full_hours_start=time(7), full_hours_stop=time(23))
     app['redis_cmd_publisher'] = RedisPublisher((yield from create_redis_pool()), RFXCOM_KEY_CMD)
     app['switch_service'] = SwichService(mysql_pool)
+    app['config'] = config
 
     app.router.add_static(prefix='/static', path=os.path.dirname(__file__) + '/static')
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(os.path.dirname(__file__) + '/templates'))
 
     app.router.add_route('GET', '/auth', auth)
-    app.router.add_route('GET', '/login', login)
+    app.router.add_route('POST', '/login', login)
     app.router.add_route('GET', '/livedata/power', stream)
     app.router.add_route('GET', '/', home)
     app.router.add_route('GET', '/menu/piscine', piscine)
