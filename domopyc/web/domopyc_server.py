@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, time
 from json import dumps
 import logging
 import aiohttp
+import base64
 import functools
 import hashlib
 import os
@@ -68,17 +69,6 @@ def stream(request):
             ws.send_str(reply.value)
 
     return ws
-
-@asyncio.coroutine
-def check_auth(request):
-    print('-----> %s' % request)
-    if request.version != aiohttp.HttpVersion11:
-        return
-
-    if request.headers.get('AUTHORIZATION') is None:
-        return web.HTTPForbidden()
-
-    request.transport.write(b"HTTP/1.1 100 Continue\r\n\r\n")
 
 @aiohttp_jinja2.template('index.j2')
 def home(_):
@@ -146,26 +136,20 @@ def power_costs(request):
                         headers={'Content-Type': 'application/json'})
 
 @asyncio.coroutine
-def auth(request):
-    response_model = {'title': PARAMETERS['title']}
-    if 'error' in request.GET:
-        response_model['error'] = 'identifiant ou mot de passe incorrect'
-    response = aiohttp_jinja2.render_template('login.j2', request, response_model)
-    return response
-
-@asyncio.coroutine
-def login(request):
-    parameters = yield from request.post()
-    if request.app['config'] is not None and \
-                    parameters['login'] in request.app['config']['users'] and \
-                    request.app['config']['users'][parameters['login']] == hashlib.sha224(
-                parameters['password'].encode()).hexdigest():
-        return web.HTTPFound('/menu/conso_electrique')
-    return web.HTTPFound('/auth?error=authfail')
+def authentication_middleware(app, handler):
+    @asyncio.coroutine
+    def basic_auth(request):
+        if request.headers.get('AUTHORIZATION') is not None and app['config'] is not None:
+            user_pass = base64.b64decode(request.headers.get('AUTHORIZATION').replace('Basic', '').strip()).decode('utf-8')
+            login, password = tuple(user_pass.split(':'))
+            if login in app['config']['users'] and app['config']['users'][login] == hashlib.sha224(password.encode()).hexdigest():
+                return (yield from handler(request))
+        return web.HTTPUnauthorized(headers={'WWW-Authenticate': 'Basic realm="domopyc"'})
+    return basic_auth
 
 @asyncio.coroutine
 def init(aio_loop, mysql_pool, port=8080, config=None):
-    app = web.Application(loop=aio_loop)
+    app = web.Application(loop=aio_loop, middlewares=[authentication_middleware])
     app['current_cost_service'] = CurrentCostDatabaseReader(mysql_pool, full_hours_start=time(7), full_hours_stop=time(23))
     app['redis_cmd_publisher'] = RedisPublisher((yield from create_redis_pool()), RFXCOM_KEY_CMD)
     app['switch_service'] = SwichService(mysql_pool)
@@ -174,12 +158,10 @@ def init(aio_loop, mysql_pool, port=8080, config=None):
     app.router.add_static(prefix='/static', path=os.path.dirname(__file__) + '/static')
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(os.path.dirname(__file__) + '/templates'))
 
-    app.router.add_route('GET', '/auth', auth)
-    app.router.add_route('POST', '/login', login)
     app.router.add_route('GET', '/livedata/power', stream)
-    app.router.add_route('GET', '/', home, expect_handler=check_auth)
+    app.router.add_route('GET', '/', home)
     app.router.add_route('GET', '/menu/piscine', piscine)
-    app.router.add_route('GET', '/menu/apropos', apropos, expect_handler=check_auth)
+    app.router.add_route('GET', '/menu/apropos', apropos)
     app.router.add_route('GET', '/menu/conso_electrique', conso_electrique)
     app.router.add_route('GET', '/menu/conso_temps_reel', conso_temps_reel)
     app.router.add_route('GET', '/menu/commandes', commandes)

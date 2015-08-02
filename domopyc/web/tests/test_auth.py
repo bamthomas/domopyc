@@ -19,49 +19,37 @@ class TestAuth(TestCase):
         config['users'] = {'foo': hashlib.sha224('pass'.encode()).hexdigest()}
 
         self.server = yield from domopyc_server.init(self.loop, self.pool, port=12345, config=config)
-        self.session = aiohttp.ClientSession(auth=aiohttp.BasicAuth('foo', 'pass'), loop=self.loop)
 
     @asyncio.coroutine
     def tearDown(self):
-        self.session.close()
         self.server.close()
         self.pool.close()
         yield from self.pool.wait_closed()
 
     @asyncio.coroutine
-    def test_auth_page(self):
-        resp = yield from aiohttp.request('GET', 'http://127.0.0.1:12345/auth')
-        body = yield from resp.text()
+    def test_get_page_without_auth(self):
+        resp = yield from aiohttp.request('GET', 'http://127.0.0.1:12345/menu/apropos', allow_redirects=False)
 
-        self.assertEqual(200, resp.status)
-        self.assertTrue('login' in body)
-        self.assertTrue('password' in body)
+        self.assertEqual(401, resp.status)
+        self.assertEqual(resp.headers['WWW-Authenticate'], 'Basic realm="domopyc"')
 
     @asyncio.coroutine
-    def test_login_unknown_user(self):
-        resp = yield from aiohttp.request('POST', 'http://127.0.0.1:12345/login', data={'login': 'bar', 'password': 'unused'})
+    def test_get_page_with_unknown_user(self):
+        session = aiohttp.ClientSession(auth=aiohttp.BasicAuth('bar', 'unused'), loop=self.loop)
+        resp = yield from session.get('http://127.0.0.1:12345/menu/apropos')
 
-        self.assertEqual(200, resp.status)
-        body = yield from resp.text()
-
-        self.assertTrue('login' in body)
-        self.assertTrue('password' in body)
-        self.assertTrue('identifiant ou mot de passe incorrect' in body)
+        self.assertEqual(401, resp.status)
 
     @asyncio.coroutine
-    def test_login_fail(self):
-        resp = yield from aiohttp.request('POST', 'http://127.0.0.1:12345/login', data={'login': 'foo', 'password': 'bad_pass'})
+    def test_get_page_with_bad_password(self):
+        session = aiohttp.ClientSession(auth=aiohttp.BasicAuth('foo', 'badpass'), loop=self.loop)
+        resp = yield from session.get('http://127.0.0.1:12345/menu/apropos')
 
-        self.assertEqual(200, resp.status)
-        body = yield from resp.text()
-
-        self.assertTrue('identifiant ou mot de passe incorrect' in body)
+        self.assertEqual(401, resp.status)
 
     @asyncio.coroutine
-    def test_login_success(self):
-        resp = yield from aiohttp.request('POST', 'http://127.0.0.1:12345/login', data={'login': 'foo', 'password': 'pass'})
+    def test_get_page_with_auth(self):
+        session = aiohttp.ClientSession(auth=aiohttp.BasicAuth('foo', 'pass'), loop=self.loop)
+        resp = yield from session.get('http://127.0.0.1:12345/menu/apropos')
 
         self.assertEqual(200, resp.status)
-        body = yield from resp.text()
-
-        self.assertTrue('Consommation électrique' in body)
