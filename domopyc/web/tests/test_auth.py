@@ -38,8 +38,8 @@ class TestAuth(TestCase):
         self.assertTrue('password' in body)
 
     @asyncio.coroutine
-    def test_login_fail(self):
-        resp = yield from aiohttp.request('POST', 'http://127.0.0.1:12345/login', data={'login': 'foo', 'password': 'bad_pass'})
+    def test_login_unknown_user(self):
+        resp = yield from aiohttp.request('POST', 'http://127.0.0.1:12345/login', data={'login': 'bar', 'password': 'unused'})
 
         self.assertEqual(200, resp.status)
         body = yield from resp.text()
@@ -47,3 +47,21 @@ class TestAuth(TestCase):
         self.assertTrue('login' in body)
         self.assertTrue('password' in body)
         self.assertTrue('identifiant ou mot de passe incorrect' in body)
+
+    @asyncio.coroutine
+    def test_login_fail(self):
+        resp = yield from aiohttp.request('POST', 'http://127.0.0.1:12345/login', data={'login': 'foo', 'password': 'bad_pass'})
+
+        self.assertEqual(200, resp.status)
+        body = yield from resp.text()
+
+        self.assertTrue('identifiant ou mot de passe incorrect' in body)
+
+    @asyncio.coroutine
+    def test_login_success(self):
+        resp = yield from aiohttp.request('POST', 'http://127.0.0.1:12345/login', data={'login': 'foo', 'password': 'pass'})
+
+        self.assertEqual(200, resp.status)
+        body = yield from resp.text()
+
+        self.assertTrue('Consommation électrique' in body)

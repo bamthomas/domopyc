@@ -23,8 +23,8 @@
 <div class="pure-g-r content">
     <div class="pure-u-1">
         <form class="pure-form pure-form-stacked">
-            <input id="login" type="text" placeholder="identifiant">
-            <input id="password" type="password" placeholder="mot de passe">
+            <input name="login" type="text" placeholder="identifiant">
+            <input name="password" type="password" placeholder="mot de passe">
             {% if error is defined %}
             <div class="pure-alert pure-alert-error">{{ error }}</div>
             {% endif %}

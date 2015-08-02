@@ -1,8 +1,12 @@
 # coding=utf-8
 import asyncio
+import configparser
 from datetime import datetime, timedelta, time
 from json import dumps
 import logging
+import aiohttp
+import functools
+import hashlib
 import os
 
 import aiohttp_jinja2
@@ -64,6 +68,17 @@ def stream(request):
             ws.send_str(reply.value)
 
     return ws
+
+@asyncio.coroutine
+def check_auth(request):
+    print('-----> %s' % request)
+    if request.version != aiohttp.HttpVersion11:
+        return
+
+    if request.headers.get('AUTHORIZATION') is None:
+        return web.HTTPForbidden()
+
+    request.transport.write(b"HTTP/1.1 100 Continue\r\n\r\n")
 
 @aiohttp_jinja2.template('index.j2')
 def home(_):
@@ -130,15 +145,22 @@ def power_costs(request):
     return web.Response(body=dumps({'data': data}, cls=Iso8601DateEncoder).encode(),
                         headers={'Content-Type': 'application/json'})
 
-@aiohttp_jinja2.template('login.j2')
+@asyncio.coroutine
 def auth(request):
     response_model = {'title': PARAMETERS['title']}
     if 'error' in request.GET:
         response_model['error'] = 'identifiant ou mot de passe incorrect'
-    return response_model
+    response = aiohttp_jinja2.render_template('login.j2', request, response_model)
+    return response
 
 @asyncio.coroutine
 def login(request):
+    parameters = yield from request.post()
+    if request.app['config'] is not None and \
+                    parameters['login'] in request.app['config']['users'] and \
+                    request.app['config']['users'][parameters['login']] == hashlib.sha224(
+                parameters['password'].encode()).hexdigest():
+        return web.HTTPFound('/menu/conso_electrique')
     return web.HTTPFound('/auth?error=authfail')
 
 @asyncio.coroutine
@@ -155,9 +177,9 @@ def init(aio_loop, mysql_pool, port=8080, config=None):
     app.router.add_route('GET', '/auth', auth)
     app.router.add_route('POST', '/login', login)
     app.router.add_route('GET', '/livedata/power', stream)
-    app.router.add_route('GET', '/', home)
+    app.router.add_route('GET', '/', home, expect_handler=check_auth)
     app.router.add_route('GET', '/menu/piscine', piscine)
-    app.router.add_route('GET', '/menu/apropos', apropos)
+    app.router.add_route('GET', '/menu/apropos', apropos, expect_handler=check_auth)
     app.router.add_route('GET', '/menu/conso_electrique', conso_electrique)
     app.router.add_route('GET', '/menu/conso_temps_reel', conso_temps_reel)
     app.router.add_route('GET', '/menu/commandes', commandes)
