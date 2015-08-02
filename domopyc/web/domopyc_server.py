@@ -148,7 +148,7 @@ def authentication_middleware(app, handler):
     return basic_auth
 
 @asyncio.coroutine
-def init(aio_loop, mysql_pool, port=8080, config=None):
+def init(aio_loop, mysql_pool, port=8080, config=None, sslcontext=None):
     app = web.Application(loop=aio_loop, middlewares=[authentication_middleware])
     app['current_cost_service'] = CurrentCostDatabaseReader(mysql_pool, full_hours_start=time(7), full_hours_stop=time(23))
     app['redis_cmd_publisher'] = RedisPublisher((yield from create_redis_pool()), RFXCOM_KEY_CMD)
@@ -172,6 +172,6 @@ def init(aio_loop, mysql_pool, port=8080, config=None):
     app.router.add_route('GET', '/power/costs/{since}', power_costs)
 
     listening_ip = '0.0.0.0'
-    srv = yield from aio_loop.create_server(app.make_handler(), listening_ip, port)
+    srv = yield from aio_loop.create_server(app.make_handler(), listening_ip, port, ssl=sslcontext)
     logger.info("Domopyc web server started at http://%s:%s" % (listening_ip, port))
     return srv
