@@ -8,13 +8,13 @@ from domopyc.daq.publishers.redis_publisher import RedisPublisher
 from domopyc.daq.rfxcom_emiter_receiver import RfxTrx433e, RfxTrx433eMessageHandler, RFXCOM_KEY_CMD
 from rfxcom.protocol.base import BasePacket
 from domopyc.subscribers.redis_toolbox import AsyncRedisSubscriber
-from domopyc.test_utils.ut_async import async_coro, DummySerial
+from domopyc.test_utils.ut_async import DummySerial
 from domopyc.test_utils.ut_redis import WithRedis
 
 
 class TestRfxTrx433e(WithRedis):
 
-    @async_coro
+    @asyncio.coroutine
     def setUp(self):
         yield from super().setUp()
         self.serial_device = DummySerial()
@@ -22,7 +22,7 @@ class TestRfxTrx433e(WithRedis):
     def tearDown(self):
         self.serial_device.close()
 
-    @async_coro
+    @asyncio.coroutine
     def test_read_data(self):
         rfxcom_emiter_receiver.now = lambda: datetime(2015, 2, 14, 15, 0, 0, tzinfo=timezone.utc)
         self.subscriber = yield from self.connection.start_subscribe()
@@ -40,7 +40,7 @@ class TestRfxTrx433e(WithRedis):
         message = yield from asyncio.wait_for(self.subscriber.next_published(), 1)
         self.assertDictEqual(dict(packet.data, date=rfxcom_emiter_receiver.now().isoformat()), loads(message.value))
 
-    @async_coro
+    @asyncio.coroutine
     def test_write_data(self):
         subscriber = AsyncRedisSubscriber(self.connection, RfxTrx433eMessageHandler(), RFXCOM_KEY_CMD).start(for_n_messages=1)
         rfxcom_device = RfxTrx433eForTest(None, RedisPublisher(self.connection, rfxcom_emiter_receiver.RFXCOM_KEY), subscriber)

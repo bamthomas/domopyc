@@ -139,7 +139,9 @@ def power_costs(request):
 def authentication_middleware(app, handler):
     @asyncio.coroutine
     def basic_auth(request):
-        if request.headers.get('AUTHORIZATION') is not None and app['config'] is not None:
+        if app['config'] is None or app['config']['users'] is None:
+            return (yield from handler(request))
+        if request.headers.get('AUTHORIZATION') is not None:
             user_pass = base64.b64decode(request.headers.get('AUTHORIZATION').replace('Basic', '').strip()).decode('utf-8')
             login, password = tuple(user_pass.split(':'))
             if login in app['config']['users'] and app['config']['users'][login] == hashlib.sha224(password.encode()).hexdigest():

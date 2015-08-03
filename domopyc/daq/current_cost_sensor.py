@@ -36,7 +36,6 @@ class AsyncCurrentCostReader(FileLike):
         self.event_loop.add_reader(self.serial_drv.fd, self.read_callback)
 
     def read_callback(self):
-        LOGGER.debug('reading line from sensor')
         line = self.readline().decode().strip()
         LOGGER.debug('line : %s' % line)
         if line:

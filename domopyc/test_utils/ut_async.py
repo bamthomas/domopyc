@@ -5,18 +5,6 @@ from socket import socketpair
 import functools
 
 
-def async_coro(f):
-    def wrap(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            coro = asyncio.coroutine(f)
-            future = coro(*args, **kwargs)
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(future)
-        return wrapper
-    return wrap(f)
-
-
 class DummySerial(object):
     def __init__(self):
         self.internal_sock, self.serial = socketpair()

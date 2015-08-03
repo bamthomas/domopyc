@@ -2,11 +2,10 @@ from asyncio import Queue
 import asyncio
 from datetime import datetime, timezone
 from json import dumps
-import unittest
+import asynctest
 from domopyc.iso8601_json import Iso8601DateEncoder
 from domopyc.subscribers import toolbox
 from domopyc.subscribers.toolbox import AverageMemoryMessageHandler
-from domopyc.test_utils.ut_async import async_coro
 
 
 class AverageMessageHandlerForTest(AverageMemoryMessageHandler):
@@ -19,19 +18,19 @@ class AverageMessageHandlerForTest(AverageMemoryMessageHandler):
         yield from self.queue.put(average_message)
 
 
-class AverageMessageHandlerTest(unittest.TestCase):
+class AverageMessageHandlerTest(asynctest.TestCase):
     def setUp(self):
         toolbox.now = lambda: datetime(2012, 12, 13, 14, 2, 0, tzinfo=timezone.utc)
         self.message_handler = AverageMessageHandlerForTest(['watt', 'temperature'], average_period_minutes=10)
 
-    @async_coro
+    @asyncio.coroutine
     def test_next_plain(self):
         _14h04 = datetime(2012, 12, 13, 14, 4, 0)
         self.assertEquals(datetime(2012, 12, 13, 14, 10), self.message_handler.next_plain(10, _14h04))
         self.assertEquals(datetime(2012, 12, 13, 14, 15), self.message_handler.next_plain(15, _14h04))
         self.assertEquals(datetime(2012, 12, 13, 14, 5), self.message_handler.next_plain(5, _14h04))
 
-    @async_coro
+    @asyncio.coroutine
     def test_average(self):
         toolbox.now = lambda: datetime(2012, 12, 13, 14, 0, 7, tzinfo=timezone.utc)
         self.message_handler.handle(dumps({'date': toolbox.now(), 'watt': 100, 'temperature': 20.0}, cls=Iso8601DateEncoder))

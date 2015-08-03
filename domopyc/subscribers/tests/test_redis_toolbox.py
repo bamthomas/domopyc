@@ -1,24 +1,22 @@
-from asyncio import Queue
 import asyncio
 from json import dumps, loads
-import unittest
 from datetime import datetime, timezone, timedelta
 from domopyc.daq import rfxcom_emiter_receiver
 from domopyc.daq.current_cost_sensor import CURRENT_COST_KEY
 
 from domopyc.iso8601_json import Iso8601DateEncoder, with_iso8601_date
 from domopyc.subscribers import redis_toolbox
-from domopyc.subscribers.redis_toolbox import AsyncRedisSubscriber, AverageMemoryMessageHandler, RedisAverageMessageHandler, RedisTimeCappedSubscriber
-from domopyc.test_utils.ut_async import async_coro, TestMessageHandler, TestExceptionMessageHandler
+from domopyc.subscribers.redis_toolbox import AsyncRedisSubscriber, RedisAverageMessageHandler, RedisTimeCappedSubscriber
+from domopyc.test_utils.ut_async import TestMessageHandler, TestExceptionMessageHandler
 from domopyc.test_utils.ut_redis import WithRedis
 
 
 class RedisSubscribeLoopTest(WithRedis):
-    @async_coro
+    @asyncio.coroutine
     def setUp(self):
         yield from super().setUp()
 
-    @async_coro
+    @asyncio.coroutine
     def test_subscribe_loop(self):
         message_handler = TestMessageHandler()
         AsyncRedisSubscriber(self.connection, message_handler, 'key').start(1)
@@ -29,7 +27,7 @@ class RedisSubscribeLoopTest(WithRedis):
         event = yield from asyncio.wait_for(message_handler.queue.get(), 2)
         self.assertDictEqual(event, expected)
 
-    @async_coro
+    @asyncio.coroutine
     def test_should_not_leave_main_loop_when_an_exception_occurs_in_main_loop(self):
         handler = TestExceptionMessageHandler()
         exception_subscriber = AsyncRedisSubscriber(self.connection, handler, 'key')
@@ -44,13 +42,13 @@ class RedisSubscribeLoopTest(WithRedis):
 
 
 class RedisAverageMessageHandlerTest(WithRedis):
-    @async_coro
+    @asyncio.coroutine
     def setUp(self):
         yield from super().setUp()
         redis_toolbox.now = lambda: datetime(2012, 12, 13, 14, 2, 0, tzinfo=timezone.utc)
         self.message_handler = RedisAverageMessageHandler(self.connection, ['watt', 'temperature'])
 
-    @async_coro
+    @asyncio.coroutine
     def test_save_event_redis_function(self):
         now = datetime(2012, 12, 13, 14, 0, 7, tzinfo=timezone.utc)
 
@@ -65,7 +63,7 @@ class RedisAverageMessageHandlerTest(WithRedis):
             {'date': now, 'watt': 305, 'temperature': 21.4, 'nb_data': 1, 'minutes': 0},
             loads(event, object_hook=with_iso8601_date))
 
-    @async_coro
+    @asyncio.coroutine
     def test_save_event_redis_function_no_ttl_if_not_first_element(self):
         yield from self.connection.lpush('current_cost_2012-12-13', ['not used'])
 
@@ -77,18 +75,18 @@ class RedisAverageMessageHandlerTest(WithRedis):
 
 class TestRedisTimeCappedSubscriber(WithRedis):
 
-    @async_coro
+    @asyncio.coroutine
     def setUp(self):
         yield from super().setUp()
 
-    @async_coro
+    @asyncio.coroutine
     def test_average_no_data(self):
         pool_temp = RedisTimeCappedSubscriber(self.connection, 'pool_temperature').start()
 
         value = yield from pool_temp.get_average()
         self.assertEqual(0.0, value)
 
-    @async_coro
+    @asyncio.coroutine
     def test_average_one_data(self):
         pool_temp = RedisTimeCappedSubscriber(self.connection, 'pool_temperature').start(1)
 
@@ -98,7 +96,7 @@ class TestRedisTimeCappedSubscriber(WithRedis):
         value = yield from pool_temp.get_average()
         self.assertEqual(3.0, value)
 
-    @async_coro
+    @asyncio.coroutine
     def test_average_two_data(self):
         pool_temp = RedisTimeCappedSubscriber(self.connection, 'pool_temperature').start(2)
 
@@ -109,7 +107,7 @@ class TestRedisTimeCappedSubscriber(WithRedis):
         value = yield from pool_temp.get_average()
         self.assertEqual(3.5, value)
 
-    @async_coro
+    @asyncio.coroutine
     def test_average_two_equal_data(self):
         pool_temp = RedisTimeCappedSubscriber(self.connection, 'pool_temperature').start(2)
 
@@ -121,7 +119,7 @@ class TestRedisTimeCappedSubscriber(WithRedis):
         self.assertEqual(2, (yield from self.connection.zcard('pool_temperature')))
         self.assertEqual(3, value)
 
-    @async_coro
+    @asyncio.coroutine
     def test_capped_collection(self):
         pool_temp = RedisTimeCappedSubscriber(self.connection, 'pool_temperature', 10).start(3)
         redis_toolbox.now = lambda: datetime(2015, 2, 14, 15, 0, 10, tzinfo=timezone.utc)
@@ -134,7 +132,7 @@ class TestRedisTimeCappedSubscriber(WithRedis):
         value = yield from pool_temp.get_average()
         self.assertEqual(5.0, value)
 
-    @async_coro
+    @asyncio.coroutine
     def test_get_live_data(self):
         live_data_handler = RedisTimeCappedSubscriber(self.connection, 'live_data', 3600, pubsub_key=CURRENT_COST_KEY, indicator_key='watt').start()
         yield from live_data_handler.handle({'date': redis_toolbox.now(), 'watt': 100})
@@ -144,7 +142,7 @@ class TestRedisTimeCappedSubscriber(WithRedis):
         self.assertEqual(1, len(data))
         self.assertEqual({'date': redis_toolbox.now(), 'watt': 100}, data[0])
 
-    @async_coro
+    @asyncio.coroutine
     def test_get_live_data_keeps_one_hour_data(self):
         test_now = datetime.now()
         live_data_handler = RedisTimeCappedSubscriber(self.connection, 'live_data', 3600, pubsub_key=CURRENT_COST_KEY, indicator_key='watt')

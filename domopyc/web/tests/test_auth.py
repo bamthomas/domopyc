@@ -27,6 +27,14 @@ class TestAuth(TestCase):
         yield from self.pool.wait_closed()
 
     @asyncio.coroutine
+    def test_get_page_without_userconfig(self):
+        server_without_user_config = yield from domopyc_server.init(self.loop, self.pool, port=12346, config=None)
+        resp = yield from aiohttp.request('GET', 'http://127.0.0.1:12346/menu/apropos', allow_redirects=False)
+
+        self.assertEqual(200, resp.status)
+        server_without_user_config.close()
+
+    @asyncio.coroutine
     def test_get_page_without_auth(self):
         resp = yield from aiohttp.request('GET', 'http://127.0.0.1:12345/menu/apropos', allow_redirects=False)
 

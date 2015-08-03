@@ -3,6 +3,7 @@ import asyncio
 import unittest
 
 import asyncio_redis
+import asynctest
 
 
 @asyncio.coroutine
@@ -11,7 +12,7 @@ def create_redis_pool():
     return connection
 
 
-class WithRedis(unittest.TestCase):
+class WithRedis(asynctest.TestCase):
     @asyncio.coroutine
     def setUp(self):
         self.connection = yield from create_redis_pool()

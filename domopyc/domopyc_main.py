@@ -20,10 +20,10 @@ def run_application(mysq_pool):
 
 if __name__ == '__main__':
     config = configparser.ConfigParser()
-    config.read(os.path.dirname(__file__) +'/web/users.conf')
+    config.read(os.path.dirname(__file__) +'/web/static/users.conf')
 
     sslcontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-    sslcontext.load_cert_chain(os.path.dirname(__file__) + '/web/domopyc.crt', os.path.dirname(__file__) +'/web/domopyc.key')
+    sslcontext.load_cert_chain('/home/pi/domopyc.crt', '/home/pi/domopyc.key')
 
     loop = asyncio.get_event_loop()
     pool = loop.run_until_complete(create_mysql_pool())

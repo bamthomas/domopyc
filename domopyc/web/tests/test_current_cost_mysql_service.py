@@ -1,18 +1,19 @@
 import asyncio
-from datetime import datetime, timezone, time, timedelta
+from asyncio.test_utils import TestCase
+from datetime import datetime, time, timedelta
 from decimal import Decimal
-from unittest import TestCase
+import unittest
 
 import aiomysql
 from domopyc.subscribers.mysql_toolbox import MysqlCurrentCostMessageHandler
-from domopyc.test_utils.ut_async import async_coro
+
 from tzlocal import get_localzone
 from domopyc.web import current_cost_mysql_service
 from domopyc.web.current_cost_mysql_service import CurrentCostDatabaseReader, merge_full_and_empty_hours
 
 
 class GetCurrentCostData(TestCase):
-    @async_coro
+    @asyncio.coroutine
     def setUp(self):
         self.pool = yield from aiomysql.create_pool(host='127.0.0.1', port=3306,
                                                     user='test', password='test', db='test',
@@ -25,12 +26,12 @@ class GetCurrentCostData(TestCase):
             cur = yield from conn.cursor()
             yield from cur.execute("truncate current_cost")
 
-    @async_coro
+    @asyncio.coroutine
     def tearDown(self):
         self.pool.close()
         yield from self.pool.wait_closed()
 
-    @async_coro
+    @asyncio.coroutine
     def test_get_history_three_days(self):
         yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 0, 0), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
         yield from self.message_handler.save({'date': datetime(2015, 5, 29, 10, 10, 0), 'watt': 1000, 'minutes': 120, 'nb_data': 120, 'temperature': 20.2})
@@ -44,7 +45,7 @@ class GetCurrentCostData(TestCase):
         self.assertEqual((datetime(2015, 5, 29, 0, 0), Decimal(3)), data[1])
         self.assertEqual((datetime(2015, 5, 30, 0, 0), Decimal(3)), data[2])
 
-    @async_coro
+    @asyncio.coroutine
     def test_get_costs_since_and_only_empty_hours(self):
         yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 0, 0), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
         yield from self.message_handler.save({'date': datetime(2015, 5, 30, 7, 0, 0), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
@@ -53,7 +54,7 @@ class GetCurrentCostData(TestCase):
 
         self.assertTupleEqual((datetime(2015, 5, 30), (Decimal(0.0), Decimal(1.0))), data[0])
 
-    @async_coro
+    @asyncio.coroutine
     def test_get_costs_without_empty_and_full_hours(self):
         current_cost_service_without_discount_hours = CurrentCostDatabaseReader(self.pool)
         yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 0, 0), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
@@ -64,7 +65,7 @@ class GetCurrentCostData(TestCase):
         self.assertEqual(1, len(data))
         self.assertEqual((datetime(2015, 5, 28), (Decimal(2.0), Decimal(0.0))), data[0])
 
-    @async_coro
+    @asyncio.coroutine
     def test_get_costs_full_and_empty_hours(self):
         yield from self.message_handler.save({'date': datetime(2015, 5, 28, 12, 0, 0), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
         yield from self.message_handler.save({'date': datetime(2015, 5, 28, 7, 0, 0), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
@@ -75,7 +76,7 @@ class GetCurrentCostData(TestCase):
         self.assertEqual(1, len(data))
         self.assertEqual((datetime(2015, 5, 28), (Decimal(1.0), Decimal(2.0))), data[0])
 
-    @async_coro
+    @asyncio.coroutine
     def test_get_costs_since_16_days_is_grouped_by_week(self):
         current_cost_mysql_service.now = lambda: datetime(2015, 6, 17, 12, 0, 0)
         for i in range(1, 17):
@@ -88,7 +89,7 @@ class GetCurrentCostData(TestCase):
         self.assertEqual((datetime(2015, 6, 7), (Decimal(7.0), Decimal(0.0))), data[1])
         self.assertEqual((datetime(2015, 6, 14), (Decimal(3.0), Decimal(0.0))), data[2])
 
-    @async_coro
+    @asyncio.coroutine
     def test_get_costs_since_11_weeks_is_grouped_by_month(self):
         current_cost_mysql_service.now = lambda: datetime(2015, 8, 17, 12, 0, 0)
         for i in range(0, 65):
@@ -102,7 +103,7 @@ class GetCurrentCostData(TestCase):
         self.assertEqual((datetime(2015, 8, 1), (Decimal(4.0), Decimal(0.0))), data[2])
 
 
-class MergeEmptyAndFullHours(TestCase):
+class MergeEmptyAndFullHours(unittest.TestCase):
     def test_no_empty_hours(self):
         self.assertTupleEqual(((datetime(2015, 5, 28), (1, 0)),), merge_full_and_empty_hours(((datetime(2015, 5, 28), 1),), ()))
 

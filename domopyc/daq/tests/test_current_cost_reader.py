@@ -1,13 +1,24 @@
 # coding=utf-8
 from datetime import datetime
-import unittest
 import asyncio
+import functools
+from unittest import TestCase
 from domopyc.daq import current_cost_sensor
 from domopyc.daq.current_cost_sensor import AsyncCurrentCostReader
-from domopyc.test_utils.ut_async import async_coro, DummySerial, QueuePublisher
+from domopyc.test_utils.ut_async import DummySerial, QueuePublisher
 
+def async_coro(f):
+    def wrap(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            coro = asyncio.coroutine(f)
+            future = coro(*args, **kwargs)
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(future)
+        return wrapper
+    return wrap(f)
 
-class CurrentCostReaderTest(unittest.TestCase):
+class CurrentCostReaderTest(TestCase):
     def setUp(self):
         current_cost_sensor.now = lambda: datetime(2012, 12, 13, 14, 15, 16)
         self.serial_device = DummySerial()
@@ -29,7 +40,7 @@ class CurrentCostReaderTest(unittest.TestCase):
     @async_coro
     def test_read_sensor_xml_error_dont_break_loop(self):
         self.serial_device.write('<malformed XML>\n'.encode())
-        self.serial_device.serial.send  (
+        self.serial_device.serial.send(
             '<msg><src>CC128-v1.29</src><dsb>00302</dsb><time>02:57:28</time><tmpr>21.4</tmpr><sensor>1</sensor><id>00126</id><type>1</type><ch1><watts>00305</watts></ch1></msg>\n'.encode())
 
         event = yield from asyncio.wait_for(self.publisher.queue.get(), 1)

@@ -3,15 +3,15 @@ from json import dumps
 import unittest
 import asyncio
 import aiomysql
+import asynctest
 from domopyc.iso8601_json import Iso8601DateEncoder
 
 from domopyc.subscribers import redis_toolbox
 from domopyc.subscribers.mysql_toolbox import MysqlCurrentCostMessageHandler, MysqlTemperatureMessageHandler
-from domopyc.test_utils.ut_async import async_coro
 
 
-class MysqlAverageMessageHandlerTest(unittest.TestCase):
-    @async_coro
+class MysqlAverageMessageHandlerTest(asynctest.TestCase):
+    @asyncio.coroutine
     def setUp(self):
         self.pool = yield from aiomysql.create_pool(host='127.0.0.1', port=3306,
                                                     user='test', password='test', db='test',
@@ -25,12 +25,12 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
         redis_toolbox.now = lambda: datetime(2012, 12, 13, 14, 2, 0, tzinfo=timezone.utc)
         self.message_handler = MysqlCurrentCostMessageHandler(self.pool)
 
-    @async_coro
+    @asyncio.coroutine
     def tearDown(self):
         self.pool.close()
         yield from self.pool.wait_closed()
 
-    @async_coro
+    @asyncio.coroutine
     def test_create_table_if_it_doesnot_exist(self):
         with (yield from self.pool) as conn:
             cur = yield from conn.cursor()
@@ -46,7 +46,7 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
             self.assertEquals((('current_cost',),), current_cost_table)
             yield from cur.close()
 
-    @async_coro
+    @asyncio.coroutine
     def test_save_event_mysql(self):
         with (yield from self.pool) as conn:
             now = datetime(2012, 12, 13, 14, 0, 7, tzinfo=timezone.utc)
@@ -72,7 +72,7 @@ class MysqlAverageMessageHandlerTest(unittest.TestCase):
 
 
 class MysqlTemperatureMessageHandlerTest(unittest.TestCase):
-    @async_coro
+    @asyncio.coroutine
     def setUp(self):
         self.pool = yield from aiomysql.create_pool(host='127.0.0.1', port=3306,
                                                     user='test', password='test', db='test',
@@ -86,12 +86,12 @@ class MysqlTemperatureMessageHandlerTest(unittest.TestCase):
         redis_toolbox.now = lambda: datetime(2012, 12, 13, 14, 2, 0, tzinfo=timezone.utc)
         self.message_handler = MysqlTemperatureMessageHandler(self.pool, 'test_temp')
 
-    @async_coro
+    @asyncio.coroutine
     def tearDown(self):
         self.pool.close()
         yield from self.pool.wait_closed()
 
-    @async_coro
+    @asyncio.coroutine
     def test_save_event_mysql(self):
         with (yield from self.pool) as conn:
             now = datetime(2012, 12, 13, 14, 0, 7, tzinfo=timezone.utc)
