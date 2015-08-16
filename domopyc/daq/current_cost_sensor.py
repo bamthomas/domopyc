@@ -25,6 +25,12 @@ CURRENT_COST_KEY = 'current_cost'
 def now():
     return datetime.now(tz=get_localzone())
 
+def create_current_cost(redis_connection):
+    serial_drv = serial.Serial(DEVICE, baudrate=57600,
+                                   bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,
+                                   timeout=10)
+    LOGGER.info("create reader")
+    return AsyncCurrentCostReader(serial_drv, RedisPublisher(redis_connection, CURRENT_COST_KEY))
 
 class AsyncCurrentCostReader(FileLike):
 
@@ -54,19 +60,3 @@ class AsyncCurrentCostReader(FileLike):
 
     def remove_reader(self):
         self.event_loop.remove_reader(self.serial_drv.fd)
-
-
-if __name__ == '__main__':
-    serial_drv = serial.Serial(DEVICE, baudrate=57600,
-                               bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,
-                               timeout=10)
-
-    loop = asyncio.get_event_loop()
-    LOGGER.info("create redis connection")
-    redis_conn = loop.run_until_complete(create_redis_connection())
-
-    LOGGER.info("create reader")
-    reader = AsyncCurrentCostReader(serial_drv, RedisPublisher(redis_conn, CURRENT_COST_KEY), loop)
-
-    LOGGER.info("launch main loop")
-    loop.run_forever()
