@@ -1,9 +1,10 @@
 import asyncio
 import configparser
 import ssl
+from domopyc.daq.current_cost_sensor import create_current_cost, CURRENT_COST_KEY
 import os
 from domopyc.daq.rfxcom_emiter_receiver import create_rfxtrx433e, RFXCOM_KEY
-from domopyc.subscribers.mysql_toolbox import MysqlTemperatureMessageHandler
+from domopyc.subscribers.mysql_toolbox import MysqlTemperatureMessageHandler, MysqlCurrentCostMessageHandler
 from domopyc.subscribers.redis_toolbox import AsyncRedisSubscriber, create_redis_pool
 from domopyc.web.domopyc_server import init, create_mysql_pool
 from domopyc.web.keep_alive_service import KeepAliveService
@@ -12,8 +13,13 @@ from domopyc.web.keep_alive_service import KeepAliveService
 @asyncio.coroutine
 def run_application(mysq_pool):
      # backend
+    redis_pool_ = yield from create_redis_pool()
     daq_rfxcom = yield from create_rfxtrx433e()
-    pool_temp_recorder = AsyncRedisSubscriber((yield from create_redis_pool()),
+    current_cost = create_current_cost(redis_pool_)
+    current_cost_recorder = AsyncRedisSubscriber(redis_pool_,
+                                                 MysqlCurrentCostMessageHandler(mysq_pool, average_period_minutes=10),
+                                                 CURRENT_COST_KEY).start()
+    pool_temp_recorder = AsyncRedisSubscriber(redis_pool_,
                                                   MysqlTemperatureMessageHandler(mysq_pool, 'pool_temperature'),
                                                   RFXCOM_KEY).start()
 
