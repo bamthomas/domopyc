@@ -43,11 +43,11 @@ $(document).ready(function () {
 
     socket.onmessage = function (msg) {
         var item = JSON.parse(msg.data);
-        $("#current").text(item.temperature);
+        $("#current").text(item.watt);
         var timestamp = moment(item.date);
         var series = chart.series[0], shift = series.data.length > 170;
 
-        console.log("item timestamp=" + timestamp + " item.temp=" + item.temperature);
-        chart.series[0].addPoint([timestamp.toDate(), item.temperature], true, shift);
+        console.log("item timestamp=" + timestamp + " item.watt=" + item.watt);
+        chart.series[0].addPoint([timestamp.toDate(), item.watt], true, shift);
     };
 });
