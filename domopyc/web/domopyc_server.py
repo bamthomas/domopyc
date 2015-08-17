@@ -76,8 +76,9 @@ def home(_):
 
 @aiohttp_jinja2.template('piscine.j2')
 def piscine(request):
-    value = yield from request.app['current_cost_service'].get_last_value('pool_temperature', 'temperature')
-    return dict(temperature=value, temps_filtrage=str(timedelta(minutes=calculate_in_minutes(value))), **TITLE_AND_CONFIG)
+    values = yield from request.app['current_cost_service'].get_values('pool_temperature', 'temperature')
+    last_value = values[0]['temperature']
+    return dict(temperature=last_value, temps_filtrage=str(timedelta(minutes=calculate_in_minutes(last_value))), values=values, **TITLE_AND_CONFIG)
 
 @aiohttp_jinja2.template('apropos.j2')
 def apropos(_):

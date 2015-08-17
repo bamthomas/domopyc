@@ -3,6 +3,7 @@ import asyncio
 from datetime import datetime, timedelta, time
 from decimal import Decimal
 from tzlocal import get_localzone
+from aiomysql import DictCursor
 
 
 def now():
@@ -67,13 +68,13 @@ class CurrentCostDatabaseReader(object):
             return merge_full_and_empty_hours(keep_two_first_fields(full), keep_two_first_fields(empty))
 
     @asyncio.coroutine
-    def get_last_value(self, table, field):
+    def get_values(self, table, field):
         with (yield from self.pool) as conn:
-            cur = yield from conn.cursor()
-            yield from cur.execute("SELECT {field} from {table} order by timestamp desc LIMIT 1".format(field=field, table=table))
-            value = yield from cur.fetchone()
+            cur = yield from conn.cursor(cursor=DictCursor)
+            yield from cur.execute("SELECT {field}, timestamp from {table} order by timestamp desc".format(field=field, table=table))
+            values = yield from cur.fetchall()
             yield from cur.close()
-            return float(value[0])
+            return values
 
 
 def merge_full_and_empty_hours(full, empty):

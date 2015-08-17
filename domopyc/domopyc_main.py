@@ -20,7 +20,7 @@ def run_application(mysq_pool):
                                                  MysqlCurrentCostMessageHandler(mysq_pool, average_period_minutes=10),
                                                  CURRENT_COST_KEY).start()
     pool_temp_recorder = AsyncRedisSubscriber(redis_pool_,
-                                                  MysqlTemperatureMessageHandler(mysq_pool, 'pool_temperature'),
+                                                  MysqlTemperatureMessageHandler(mysq_pool, 'pool_temperature', average_period_minutes=360),
                                                   RFXCOM_KEY).start()
 
 

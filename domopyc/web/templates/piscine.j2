@@ -1,17 +1,28 @@
 {% extends "index.j2" %}
 
 {% block main %}
-<div class="header">
-    <h1>{{ title }}</h1>
+    <div class="header">
+        <h1>{{ title }}</h1>
+        <h2>Piscine</h2>
+    </div>
+    <div class="pure-g-r content">
+        <p>
+            Dernière température relevée : {{ temperature }}
+        </p>
+        <p>
+            Temps de filtrage conseillé : {{ temps_filtrage }}
+        </p>
+        <script>
+            var POOL_TEMPERATURES = [
+            {% for value in values %}
+                [ moment("{{ value['timestamp'] }}").toDate().getTime(), {{  value['temperature'] }} ],
+            {% endfor %}
+            ];
+        </script>
+        <div id="chart"></div>
+    </div>
+{% endblock %}
 
-    <h2>Piscine</h2>
-</div>
-<div class="pure-g-r content">
-<p>
-Dernière température relevée : {{ temperature }}
-</p>
-<p>
-Temps de filtrage conseillé : {{ temps_filtrage }}
-</p>
-</div>
+{% block js %}
+    <script src="/static/piscine.js" type="text/javascript"></script>
 {% endblock %}
