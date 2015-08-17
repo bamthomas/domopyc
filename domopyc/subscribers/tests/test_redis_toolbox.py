@@ -52,7 +52,7 @@ class RedisAverageMessageHandlerTest(WithRedis):
     def test_save_event_redis_function(self):
         now = datetime(2012, 12, 13, 14, 0, 7, tzinfo=timezone.utc)
 
-        yield from self.message_handler.handle(dumps({'date': now, 'watt': 305.0, 'temperature': 21.4}, cls=Iso8601DateEncoder))
+        yield from self.message_handler.handle({'date': now, 'watt': 305.0, 'temperature': 21.4})
 
         ttl = yield from self.connection.ttl('current_cost_2012-12-13')
         self.assertTrue(int(ttl) > 0)

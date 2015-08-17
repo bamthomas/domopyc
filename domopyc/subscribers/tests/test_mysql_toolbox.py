@@ -51,8 +51,7 @@ class MysqlAverageMessageHandlerTest(asynctest.TestCase):
         with (yield from self.pool) as conn:
             now = datetime(2012, 12, 13, 14, 0, 7, tzinfo=timezone.utc)
 
-            yield from self.message_handler.handle(
-                dumps({'date': now, 'watt': 305.0, 'temperature': 21.4}, cls=Iso8601DateEncoder))
+            yield from self.message_handler.handle({'date': now, 'watt': 305.0, 'temperature': 21.4})
 
             table_rows = yield from self.nb_table_rows('current_cost')
             self.assertEquals(1, table_rows)

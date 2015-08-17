@@ -33,15 +33,15 @@ class AverageMessageHandlerTest(asynctest.TestCase):
     @asyncio.coroutine
     def test_average(self):
         toolbox.now = lambda: datetime(2012, 12, 13, 14, 0, 7, tzinfo=timezone.utc)
-        self.message_handler.handle(dumps({'date': toolbox.now(), 'watt': 100, 'temperature': 20.0}, cls=Iso8601DateEncoder))
+        yield from self.message_handler.handle({'date': toolbox.now(), 'watt': 100, 'temperature': 20.0})
         self.assertEquals(0, self.message_handler.queue.qsize())
 
         toolbox.now = lambda: datetime(2012, 12, 13, 14, 3, 0, tzinfo=timezone.utc)
-        self.message_handler.handle(dumps({'date': toolbox.now(), 'watt': 200, 'temperature': 30.0}, cls=Iso8601DateEncoder))
+        yield from self.message_handler.handle({'date': toolbox.now(), 'watt': 200, 'temperature': 30.0})
         self.assertEquals(0, self.message_handler.queue.qsize())
 
         toolbox.now = lambda: datetime(2012, 12, 13, 14, 10, 0, 1, tzinfo=timezone.utc)
-        self.message_handler.handle(dumps({'date': toolbox.now(), 'watt': 900, 'temperature': 10.0}, cls=Iso8601DateEncoder))
+        yield from self.message_handler.handle({'date': toolbox.now(), 'watt': 900, 'temperature': 10.0})
 
         event_average = yield from asyncio.wait_for(self.message_handler.queue.get(), 1)
         self.assertEqual({'date': toolbox.now(), 'watt': 400.0, 'temperature': 20.0, 'nb_data': 3, 'minutes': 10}, event_average)

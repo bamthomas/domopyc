@@ -25,7 +25,7 @@ class AverageMemoryMessageHandler(object):
             average_json_message = self.get_average_json_message(json_message['date'])
             self.next_save_date = self.next_save_date + self.delta_minutes
             self.messages = []
-            return asyncio.async(self.save(average_json_message))
+            return (yield from self.save(average_json_message))
 
     def get_average_json_message(self, date):
         keys_mean = map(mean, zip(*map(itemgetter(*self.keys), self.messages)))
