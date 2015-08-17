@@ -48,6 +48,6 @@ $(document).ready(function () {
         var series = chart.series[0], shift = series.data.length > 170;
 
         console.log("item timestamp=" + timestamp + " item.watt=" + item.watt);
-        chart.series[0].addPoint([timestamp.toDate(), item.watt], true, shift);
+        chart.series[0].addPoint([timestamp.toDate().getTime(), item.watt], true, shift);
     };
 });
