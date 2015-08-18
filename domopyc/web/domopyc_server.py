@@ -1,32 +1,26 @@
 # coding=utf-8
 import asyncio
-import configparser
 from datetime import datetime, timedelta, time
 from json import dumps
 import logging
-import aiohttp
-import base64
-import functools
-import hashlib
-import os
 
 import aiohttp_jinja2
-
 import asyncio_redis
 from iso8601 import iso8601
 from tzlocal import get_localzone
 
+import base64
+import hashlib
+import os
 from aiohttp import web
 from aiohttp.web_ws import WebSocketResponse
 import aiomysql
 from domopyc.daq.publishers.redis_publisher import RedisPublisher
-from domopyc.daq.rfxcom_emiter_receiver import RFXCOM_KEY, RFXCOM_KEY_CMD, create_rfxtrx433e
+from domopyc.daq.rfxcom_emiter_receiver import RFXCOM_KEY_CMD
 import jinja2
 from domopyc.daq.current_cost_sensor import CURRENT_COST_KEY
 from domopyc.indicators.filtration_duration import calculate_in_minutes
 from domopyc.iso8601_json import Iso8601DateEncoder
-from domopyc.subscribers.mysql_toolbox import MysqlTemperatureMessageHandler
-from domopyc.subscribers.redis_toolbox import AsyncRedisSubscriber
 from domopyc.web.configuration import PARAMETERS
 from domopyc.web.current_cost_mysql_service import CurrentCostDatabaseReader
 from domopyc.web.switch_service import SwichService
