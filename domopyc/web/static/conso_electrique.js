@@ -23,7 +23,7 @@ $(document).ready(function () {
     $('#costs').on('click', function () {
         power.costs(moment.duration(8, 'days'));
     });
-    power.history();
+    power.day();
 });
 
 var power = (function () {

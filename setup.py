@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '1.0b9'
+version = '1.0b10'
 
 install_requires = [
     'setuptools',

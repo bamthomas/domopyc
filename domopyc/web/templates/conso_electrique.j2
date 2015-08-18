@@ -9,15 +9,14 @@
 <div class="pure-g-r content">
     <p></p>
     <div align="center">
-        <button id="history" class="button-secondary pure-button">historique</button>
         <button id="by_day" class="button-success pure-button">par jour</button>
         <button id="costs" class="button-error pure-button">coûts</button>
+        <button id="history" class="button-secondary pure-button">historique</button>
     </div>
     <div class="pure-g power_chart_container">
         <div class="pure-u-1-24"><a id="previous_day" href="#" title="jour précédent" onclick="power.previous_day();"><i class="fa fa-angle-left day_navigation"></i></a></div>
         <div id="chart" class="pure-u-22-24"></div>
         <div class="pure-u-1-24 day_navigation"><a id="next_day" href="#" title="jour suivant" onclick="power.next_day();"><i class="fa fa-angle-right day_navigation"></i></a></div>
-
     </div>
     <div class="cost_period" align="center">
         <button class="button-success pure-button" onclick="power.costs(moment.duration(8, 'days'));">8 jours</button>
