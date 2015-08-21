@@ -28,7 +28,10 @@ class AverageMemoryMessageHandler(object):
             return (yield from self.save(average_json_message))
 
     def get_average_json_message(self, date):
-        keys_mean = map(mean, zip(*map(itemgetter(*self.keys), self.messages)))
+        if len(self.keys) == 1:
+            keys_mean = [(mean(map(itemgetter(self.keys[0]), self.messages)))]
+        else:
+            keys_mean = map(mean, zip(*map(itemgetter(*self.keys), self.messages)))
         dict_mean = dict(zip(self.keys, keys_mean))
         return dict(date=date, nb_data=len(self.messages), minutes=int(self.delta_minutes.total_seconds() / 60), **dict_mean)
 
