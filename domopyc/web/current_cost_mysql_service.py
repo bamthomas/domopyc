@@ -58,9 +58,10 @@ class CurrentCostDatabaseReader(object):
                                    (since, self.full_hours_start, self.full_hours_stop))
             full = yield from cur.fetchall()
             yield from cur.execute("SELECT timestamp(date(timestamp), MAKETIME(0,0,0)) AS day, "
-                                   "sum(watt * minutes) / (60 * 1000), {period_func}(timestamp) as period FROM current_cost "
+                                   "sum(watt * minutes) / (60 * 1000), {period_func}(timestamp) + {next_period_func}(timestamp) * 100 as period FROM current_cost "
                                    "WHERE timestamp >= %s AND (TIME(timestamp) < %s OR TIME(timestamp) > %s) "
-                                   "GROUP BY period ORDER BY day ".format(period_func=period_func), (since, self.full_hours_start, self.full_hours_stop))
+                                   "GROUP BY period ORDER BY day ".format(period_func=period_func, next_period_func=next_period_func),
+                                   (since, self.full_hours_start, self.full_hours_stop))
             empty = yield from cur.fetchall()
             yield from cur.close()
 
