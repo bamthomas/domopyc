@@ -12,11 +12,11 @@ def now():
 
 def get_sql_period_function(since):
     if now() - since > timedelta(weeks=11):
-        return 'MONTH'
+        return 'MONTH', 'YEAR'
     if now() - since >= timedelta(days=15):
-        return 'WEEK'
+        return 'WEEK', 'MONTH'
     if now() - since < timedelta(days=15):
-        return 'DAYOFYEAR'
+        return 'DAYOFYEAR', 'YEAR'
 
 
 class CurrentCostDatabaseReader(object):
@@ -48,13 +48,14 @@ class CurrentCostDatabaseReader(object):
 
     @asyncio.coroutine
     def get_costs(self, since):
-        period_func = get_sql_period_function(since)
+        period_func, next_period_func = get_sql_period_function(since)
         with (yield from self.pool) as conn:
             cur = yield from conn.cursor()
             yield from cur.execute("SELECT timestamp(date(timestamp), MAKETIME(0,0,0)) AS day, "
-                                   "sum(watt * minutes) / (60 * 1000), {period_func}(timestamp) as period FROM current_cost "
+                                   "sum(watt * minutes) / (60 * 1000), {period_func}(timestamp) + {next_period_func}(timestamp) * 100 as period FROM current_cost "
                                    "WHERE timestamp >= %s AND TIME(timestamp) >= %s and TIME(timestamp) <= %s "
-                                   "GROUP BY period ORDER BY day ".format(period_func=period_func), (since, self.full_hours_start, self.full_hours_stop))
+                                   "GROUP BY period ORDER BY day ".format(period_func=period_func, next_period_func=next_period_func),
+                                   (since, self.full_hours_start, self.full_hours_stop))
             full = yield from cur.fetchall()
             yield from cur.execute("SELECT timestamp(date(timestamp), MAKETIME(0,0,0)) AS day, "
                                    "sum(watt * minutes) / (60 * 1000), {period_func}(timestamp) as period FROM current_cost "

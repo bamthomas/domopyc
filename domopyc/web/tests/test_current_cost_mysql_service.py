@@ -1,10 +1,10 @@
 import asyncio
-from asyncio.test_utils import TestCase
 from datetime import datetime, time, timedelta
 from decimal import Decimal
 import unittest
 
 import aiomysql
+from asynctest.case import TestCase
 from domopyc.subscribers.mysql_toolbox import MysqlCurrentCostMessageHandler
 
 from tzlocal import get_localzone
@@ -17,7 +17,7 @@ class GetCurrentCostData(TestCase):
     def setUp(self):
         self.pool = yield from aiomysql.create_pool(host='127.0.0.1', port=3306,
                                                     user='test', password='test', db='test',
-                                                    loop=asyncio.get_event_loop())
+                                                    loop=self.loop)
 
         self.message_handler = MysqlCurrentCostMessageHandler(self.pool)
         self.current_cost_service = CurrentCostDatabaseReader(self.pool, time(8, 0), time(22, 0))
@@ -101,6 +101,20 @@ class GetCurrentCostData(TestCase):
         self.assertEqual((datetime(2015, 6, 1), (Decimal(30.0), Decimal(0.0))), data[0])
         self.assertEqual((datetime(2015, 7, 1), (Decimal(31.0), Decimal(0.0))), data[1])
         self.assertEqual((datetime(2015, 8, 1), (Decimal(4.0), Decimal(0.0))), data[2])
+
+    @asyncio.coroutine
+    def test_get_costs_since_period__do_not_gather_months_from_different_years(self):
+        current_cost_mysql_service.now = lambda: datetime(2015, 8, 17, 12, 0, 0)
+        for i in range(0, 427):
+            yield from self.message_handler.save({'date': datetime(2014, 7, 1, 12, 0, 0) + timedelta(days=i), 'watt': 1000, 'minutes': 60, 'nb_data': 120, 'temperature': 20.2})
+
+        data = yield from self.current_cost_service.get_costs(since=datetime(2014, 7, 1, 0, 0))
+
+        self.assertEqual(14, len(data))
+        self.assertEqual((datetime(2014, 7, 1), (Decimal(31.0), Decimal(0.0))), data[0])
+        self.assertEqual((datetime(2014, 8, 1), (Decimal(31.0), Decimal(0.0))), data[1])
+        self.assertEqual((datetime(2015, 7, 1), (Decimal(31.0), Decimal(0.0))), data[12])
+        self.assertEqual((datetime(2015, 8, 1), (Decimal(31.0), Decimal(0.0))), data[13])
 
 
 class MergeEmptyAndFullHours(unittest.TestCase):
