@@ -66,7 +66,7 @@ def stream(request):
 
 @aiohttp_jinja2.template('index.j2')
 def home(_):
-    return TITLE_AND_CONFIG
+    return web.HTTPFound('/menu/conso_electrique')
 
 @aiohttp_jinja2.template('piscine.j2')
 def piscine(request):
