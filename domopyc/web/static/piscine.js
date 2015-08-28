@@ -9,16 +9,15 @@ $(document).ready(function () {
 
     chart = new Highcharts.Chart({
         chart: {
-            renderTo: 'chart',
-            type: 'areaspline',
-            marginRight: 10
+            zoomType: 'x',
+            renderTo: 'chart'
         },
         title: {
             text: 'Température de la piscine'
         },
         xAxis: {
             type: 'datetime',
-            tickPixelInterval: 150
+            minRange: 24 * 3600000
         },
         yAxis: {
             title: {
@@ -28,13 +27,11 @@ $(document).ready(function () {
         legend: {
             enabled: false
         },
-        exporting: {
-            enabled: false
-        },
         series: [
             {
                 name: 'Température piscine',
-                data: POOL_TEMPERATURES
+                data: POOL_TEMPERATURES,
+                color: '#DF7514'
             }
         ]
     });

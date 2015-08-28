@@ -73,7 +73,7 @@ class CurrentCostDatabaseReader(object):
     def get_values(self, table, field):
         with (yield from self.pool) as conn:
             cur = yield from conn.cursor(cursor=DictCursor)
-            yield from cur.execute("SELECT {field}, timestamp from {table} order by timestamp desc".format(field=field, table=table))
+            yield from cur.execute("SELECT {field}, timestamp from {table} order by timestamp".format(field=field, table=table))
             values = yield from cur.fetchall()
             yield from cur.close()
             return values
