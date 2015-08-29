@@ -82,10 +82,6 @@ def apropos(_):
 def conso_electrique(_):
     return TITLE_AND_CONFIG
 
-@aiohttp_jinja2.template('conso_temps_reel.j2')
-def conso_temps_reel(_):
-    return TITLE_AND_CONFIG
-
 @aiohttp_jinja2.template('commandes.j2')
 def commandes(request):
     switches = yield from request.app['switch_service'].get_all()
@@ -160,7 +156,6 @@ def init(aio_loop, mysql_pool, port=8080, config=None, sslcontext=None):
     app.router.add_route('GET', '/menu/piscine', piscine)
     app.router.add_route('GET', '/menu/apropos', apropos)
     app.router.add_route('GET', '/menu/conso_electrique', conso_electrique)
-    app.router.add_route('GET', '/menu/conso_temps_reel', conso_temps_reel)
     app.router.add_route('GET', '/menu/commandes', commandes)
     app.router.add_route('GET', '/menu/commandes/execute/{code_device}/{value}', command_execute)
     app.router.add_route('POST', '/menu/commandes/add', commandes_add)

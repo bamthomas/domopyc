@@ -12,22 +12,13 @@ $(document).ready(function () {
         }
     });
 
-    $('#history').on('click', function () {
-        power.history();
-    });
-
-    $('#by_day').on('click', function () {
-        power.day();
-    });
-
-    $('#costs').on('click', function () {
-        power.costs(moment.duration(8, 'days'));
-    });
     power.day();
 });
 
 var power = (function () {
     var CURRENT_DAY = moment().hours(0).minutes(0).seconds(0).milliseconds(0);
+    var socket = null;
+
 
     function createCostChart(selector, jsonData, config) {
         $(selector).highcharts({
@@ -331,7 +322,7 @@ var power = (function () {
                 createHistoryChart('#chart', dataWithDates);
             });
         },
-        day: function() {
+        day: function () {
             this.by_day(CURRENT_DAY);
         },
         by_day: function (date) {
@@ -369,6 +360,57 @@ var power = (function () {
                     'empty_hours': empty_hours
                 }, CONFIGURATION);
             });
+        },
+        close_socket: function() {
+            if (socket != null) {
+                socket.close();
+                socket = null;
+            }
+        },
+        real_time: function () {
+            $(".cost_period").hide();
+            socket = new WebSocket("wss://" + window.location.host + "/livedata/power");
+            var chart = new Highcharts.Chart({
+                chart: {
+                    renderTo: 'chart',
+                    type: 'areaspline',
+                    marginRight: 10
+                },
+                title: {
+                    text: 'Consommation en temps réel'
+                },
+                xAxis: {
+                    type: 'datetime',
+                    tickPixelInterval: 150
+                },
+                yAxis: {
+                    title: {
+                        text: 'Watt'
+                    }
+                },
+                legend: {
+                    enabled: false
+                },
+                exporting: {
+                    enabled: false
+                },
+                series: [
+                    {
+                        name: 'Consommation courante',
+                        data: []
+                    }
+                ]
+            });
+
+            socket.onmessage = function (msg) {
+                var item = JSON.parse(msg.data);
+                var timestamp = moment(item.date);
+                var series = chart.series[0], shift = series.data.length > 170;
+
+                console.log("item timestamp=" + timestamp + " item.watt=" + item.watt);
+                chart.series[0].addPoint([timestamp.toDate().getTime(), item.watt], true, shift);
+            };
+
         }
     };
 })();
