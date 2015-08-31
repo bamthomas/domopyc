@@ -129,7 +129,7 @@ var power = (function () {
             },
             yAxis: {
                 title: {
-                    text: 'puissance (kWh)'
+                    text: 'énergie (kWh)'
                 },
                 min: 0
             },
@@ -173,7 +173,7 @@ var power = (function () {
                 name: 'Consommation',
                 data: jsonData,
                 tooltip: {
-                    valueSuffix: ' kW'
+                    valueSuffix: ' kWh'
                 }
             }]
         });
