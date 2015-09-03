@@ -9,6 +9,43 @@ The idea is that domotic applications should be :
 * *decoupled* : a lot of standards and devices are available and we would like them to coopérate
 * *transparent* : we should be able to know what's going on in our home and what is sent on the wire
 
+# Installing 
+You must have at least python 3.4. 
+For the moment it is a bit pedestrian...
+
+For a raspberry pi with Raspbian:
+```
+# installing python 3.4
+sudo apt-get install build-essential openssl libssl-dev
+wget https://www.python.org/ftp/python/3.4.3/Python-3.4.3.tar.xz
+tar xzf Python-3.4.3.tar.xz
+./configure
+make
+sudo make install
+
+# installing pip/virtualenv
+sudo easy_install pip
+sudo pip install virtualenv
+
+# databases
+sudo apt-get install mysql redis-server
+mysql -u<admin_user> -p<admin_pass> mysql -e 'create database domopyc'
+mysql -u<admin_user> -p<admin_pass> mysql -e  "grant all on domopyc.* to 'domopyc'@'%' identified by 'password'"
+
+# supervisord
+sudo easy_install supervisor
+
+# then get the source of domopyc and modify the parameters in configuration.py
+python setup.py sdist
+
+# and finally install within a virtualenv (that's what I did). In /home/pi
+virtualenv --python=python3.4 venv
+. venv/bin/activate
+pip install domopyc-1.0b17.tar.gz
+```
+
+Then I run the main script with supervisor cf [supervisord.conf](install/supervisord.conf), and I start supervisord with init script cf https://github.com/Supervisor/initscripts.
+
 # Architecture
 
 ![Architecture](doc/domopyc.png)
