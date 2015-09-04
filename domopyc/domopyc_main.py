@@ -36,8 +36,10 @@ if __name__ == '__main__':
     config = configparser.ConfigParser()
     config.read(os.path.dirname(__file__) + '/web/static/domopyc.conf')
 
-    sslcontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-    sslcontext.load_cert_chain('/home/pi/domopyc.crt', '/home/pi/domopyc.key')
+    sslcontext = None
+    if 'sslcontext' in config:
+        sslcontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        sslcontext.load_cert_chain(config['sslcontext']['crt_file'], config['sslcontext']['key_file'])
 
     loop = asyncio.get_event_loop()
     pool = loop.run_until_complete(create_mysql_pool(config['mysql']))
