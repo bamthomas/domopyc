@@ -21,7 +21,6 @@ import jinja2
 from domopyc.daq.current_cost_sensor import CURRENT_COST_KEY
 from domopyc.indicators.filtration_duration import calculate_in_minutes
 from domopyc.iso8601_json import Iso8601DateEncoder
-from domopyc.web.configuration import PARAMETERS
 from domopyc.web.current_cost_mysql_service import CurrentCostDatabaseReader
 from domopyc.web.switch_service import SwichService
 
@@ -31,7 +30,9 @@ logging.basicConfig()
 root.setLevel(logging.INFO)
 logger = logging.getLogger('domopyc_server')
 
-TITLE_AND_CONFIG = {'title': PARAMETERS['title'], 'configuration': PARAMETERS}
+
+def get_default_model(config):
+    return {'title': config['domopyc']['title'], 'configuration': config['domopyc']}
 
 @asyncio.coroutine
 def create_redis_pool(nb_conn=1):
@@ -72,20 +73,20 @@ def home(_):
 def piscine(request):
     values = yield from request.app['current_cost_service'].get_values('pool_temperature', 'temperature')
     last_value = values[-1]['temperature']
-    return dict(temperature=last_value, temps_filtrage=str(timedelta(minutes=calculate_in_minutes(last_value))), values=values, **TITLE_AND_CONFIG)
+    return dict(temperature=last_value, temps_filtrage=str(timedelta(minutes=calculate_in_minutes(last_value))), values=values, **get_default_model(request.app['config']))
 
 @aiohttp_jinja2.template('apropos.j2')
-def apropos(_):
-    return TITLE_AND_CONFIG
+def apropos(request):
+    return get_default_model(request.app['config'])
 
 @aiohttp_jinja2.template('conso_electrique.j2')
-def conso_electrique(_):
-    return TITLE_AND_CONFIG
+def conso_electrique(request):
+    return get_default_model(request.app['config'])
 
 @aiohttp_jinja2.template('commandes.j2')
 def commandes(request):
     switches = yield from request.app['switch_service'].get_all()
-    return dict(switches, **TITLE_AND_CONFIG)
+    return dict(switches, **get_default_model(request.app['config']))
 
 @aiohttp_jinja2.template('commandes.j2')
 def commandes_add(request):
@@ -95,7 +96,7 @@ def commandes_add(request):
     except ValueError as e:
         logger.exception(e)
     switches = yield from request.app['switch_service'].get_all()
-    return dict(switches, **TITLE_AND_CONFIG)
+    return dict(switches, **get_default_model(request.app['config']))
 
 @aiohttp_jinja2.template('commandes.j2')
 def command_execute(request):
@@ -103,7 +104,7 @@ def command_execute(request):
     code_device = request.match_info['code_device']
     yield from request.app['redis_cmd_publisher'].publish({"code_device": code_device, "value": value})
     yield from request.app['switch_service'].switch(code_device, value)
-    return TITLE_AND_CONFIG
+    return get_default_model(request.app['config'])
 
 @asyncio.coroutine
 def power_history(request):

@@ -18,7 +18,6 @@ logger = logging.getLogger('rfxcom')
 
 RFXCOM_KEY = "rfxcom"
 RFXCOM_KEY_CMD = "rfxcom_cmd"
-dev_name = '/dev/serial/by-id/usb-RFXCOM_RFXtrx433_A1XZI13O-if00-port0'
 
 
 def now():
@@ -73,12 +72,8 @@ class RfxTrx433e(object):
 
 
 @asyncio.coroutine
-def create_rfxtrx433e():
+def create_rfxtrx433e(config):
     publisher = yield from create_publisher()
     subscriber = yield from create_subscriber()
-    return RfxTrx433e(dev_name, publisher, subscriber.start())
+    return RfxTrx433e(config['rfxcom']['device'], publisher, subscriber.start())
 
-
-if __name__ == '__main__':
-    rfxcom = asyncio.async(create_rfxtrx433e())
-    asyncio.get_event_loop().run_forever()

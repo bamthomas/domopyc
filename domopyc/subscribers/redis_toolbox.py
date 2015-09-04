@@ -7,16 +7,17 @@ import asyncio
 
 from asyncio_redis import ZScoreBoundary
 import asyncio_redis
-from domopyc.daq.current_cost_sensor import AsyncCurrentCostReader, DEVICE
-import serial
+from tzlocal import get_localzone
+
 from domopyc.subscribers.toolbox import AverageMemoryMessageHandler
 from domopyc.iso8601_json import with_iso8601_date, Iso8601DateEncoder
-from tzlocal import get_localzone
+
 
 CURRENT_COST = 'current_cost'
 
 logging.basicConfig(format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
 LOGGER = logging.getLogger('current_cost')
+
 
 def now(): return datetime.now(tz=get_localzone())
 
@@ -108,17 +109,3 @@ class RedisTimeCappedSubscriber(AsyncRedisSubscriber):
         data_set = yield from t.asdict()
         return list(map(lambda value: loads(value, object_hook=with_iso8601_date), list(data_set)))
 
-
-
-if __name__ == '__main__':
-    serial_drv = serial.Serial(DEVICE, baudrate=57600,
-                               bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,
-                               timeout=10)
-
-    class LoggingPublisher(object):
-        def handle(self, event):
-            LOGGER.info(event)
-
-    reader = AsyncCurrentCostReader(serial_drv, LoggingPublisher())
-
-    asyncio.get_event_loop().run_forever()

@@ -18,15 +18,14 @@ LOGGER.setLevel(logging.INFO)
 LOGGER.addHandler(SysLogHandler())
 
 
-DEVICE = '/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller-if00-port0'
 CURRENT_COST_KEY = 'current_cost'
 
 
 def now():
     return datetime.now(tz=get_localzone())
 
-def create_current_cost(redis_connection):
-    serial_drv = serial.Serial(DEVICE, baudrate=57600,
+def create_current_cost(redis_connection, config):
+    serial_drv = serial.Serial(config['current_cost']['device'], baudrate=57600,
                                    bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,
                                    timeout=10)
     LOGGER.info("create reader")

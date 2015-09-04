@@ -11,11 +11,11 @@ from domopyc.web.keep_alive_service import KeepAliveService
 
 
 @asyncio.coroutine
-def run_application(mysq_pool):
+def run_application(mysq_pool, config):
      # backend
     redis_pool_ = yield from create_redis_pool()
-    daq_rfxcom = yield from create_rfxtrx433e()
-    current_cost = create_current_cost(redis_pool_)
+    daq_rfxcom = yield from create_rfxtrx433e(config)
+    current_cost = create_current_cost(redis_pool_, config)
     current_cost_recorder = AsyncRedisSubscriber(redis_pool_,
                                                  MysqlCurrentCostMessageHandler(mysq_pool, average_period_minutes=10),
                                                  CURRENT_COST_KEY).start()
@@ -26,7 +26,7 @@ def run_application(mysq_pool):
 
 if __name__ == '__main__':
     config = configparser.ConfigParser()
-    config.read(os.path.dirname(__file__) +'/web/static/users.conf')
+    config.read(os.path.dirname(__file__) + '/web/static/domopyc.conf')
 
     sslcontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     sslcontext.load_cert_chain('/home/pi/domopyc.crt', '/home/pi/domopyc.key')
@@ -35,5 +35,5 @@ if __name__ == '__main__':
     pool = loop.run_until_complete(create_mysql_pool())
     keep_alive = KeepAliveService(pool, loop).start()
     loop.run_until_complete(init(loop, pool, config=config, sslcontext=sslcontext))
-    asyncio.async(run_application(pool))
+    asyncio.async(run_application(pool, config))
     loop.run_forever()

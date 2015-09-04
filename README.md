@@ -35,7 +35,7 @@ mysql -u<admin_user> -p<admin_pass> mysql -e  "grant all on domopyc.* to 'domopy
 # supervisord
 sudo easy_install supervisor
 
-# then get the source of domopyc and modify the parameters in configuration.py
+# then get the source of domopyc and modify the parameters in [domopyc.conf](domopyc/web/static/domopyc.conf)
 python setup.py sdist
 
 # and finally install within a virtualenv (that's what I did). In /home/pi
