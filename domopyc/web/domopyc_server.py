@@ -40,13 +40,6 @@ def create_redis_pool(nb_conn=1):
     return connection
 
 @asyncio.coroutine
-def create_mysql_pool():
-    pool = yield from aiomysql.create_pool(host='127.0.0.1', port=3306,
-                                               user='domopyc', password='blah', db='domopyc',
-                                               loop=asyncio.get_event_loop())
-    return pool
-
-@asyncio.coroutine
 def stream(request):
     redis_pool = yield from create_redis_pool(1)
     subscriber = yield from redis_pool.start_subscribe()
