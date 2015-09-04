@@ -17,7 +17,7 @@ class TestAuth(TestCase):
 
         config = configparser.ConfigParser()
         config['users'] = {'foo': hashlib.sha224('pass'.encode()).hexdigest()}
-        config['domopyc'] = {'title' : 'title'}
+        config['domopyc'] = {'title': 'title'}
 
         self.server = yield from domopyc_server.init(self.loop, self.pool, port=12345, config=config)
 

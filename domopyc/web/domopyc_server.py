@@ -32,7 +32,7 @@ logger = logging.getLogger('domopyc_server')
 
 
 def get_default_model(config):
-    return {'title': config['domopyc']['title'], 'configuration': config['domopyc']}
+    return {'title': config['domopyc']['title'], 'configuration': dict(config['domopyc'])}
 
 @asyncio.coroutine
 def create_redis_pool(nb_conn=1):
