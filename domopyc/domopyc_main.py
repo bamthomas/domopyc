@@ -14,8 +14,8 @@ from domopyc.web.keep_alive_service import KeepAliveService
 def run_application(mysq_pool, config):
      # backend
     redis_pool_ = yield from create_redis_pool()
-    daq_rfxcom = yield from create_rfxtrx433e(config)
-    current_cost = create_current_cost(redis_pool_, config)
+    daq_rfxcom = yield from create_rfxtrx433e(config['rfxcom'])
+    current_cost = create_current_cost(redis_pool_, config['current_cost'])
     current_cost_recorder = AsyncRedisSubscriber(redis_pool_,
                                                  MysqlCurrentCostMessageHandler(mysq_pool, average_period_minutes=10),
                                                  CURRENT_COST_KEY).start()

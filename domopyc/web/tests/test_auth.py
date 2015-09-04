@@ -17,6 +17,7 @@ class TestAuth(TestCase):
 
         config = configparser.ConfigParser()
         config['users'] = {'foo': hashlib.sha224('pass'.encode()).hexdigest()}
+        config['domopyc'] = {'title' : 'title'}
 
         self.server = yield from domopyc_server.init(self.loop, self.pool, port=12345, config=config)
 
@@ -28,7 +29,9 @@ class TestAuth(TestCase):
 
     @asyncio.coroutine
     def test_get_page_without_userconfig(self):
-        server_without_user_config = yield from domopyc_server.init(self.loop, self.pool, port=12346, config=None)
+        config = configparser.ConfigParser()
+        config['domopyc'] = {'title' : 'title'}
+        server_without_user_config = yield from domopyc_server.init(self.loop, self.pool, port=12346, config=config)
         resp = yield from aiohttp.request('GET', 'http://127.0.0.1:12346/menu/apropos', allow_redirects=False)
 
         self.assertEqual(200, resp.status)

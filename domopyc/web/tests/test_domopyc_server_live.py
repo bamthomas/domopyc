@@ -1,4 +1,5 @@
 import asyncio
+import configparser
 
 import aiohttp
 import aiomysql
@@ -16,7 +17,7 @@ class GetLiveData(WithRedis):
         self.pool = yield from aiomysql.create_pool(host='127.0.0.1', port=3306,
                                                             user='test', password='test', db='test',
                                                             loop=asyncio.get_event_loop())
-        self.server = yield from domopyc_server.init(asyncio.get_event_loop(), mysql_pool=self.pool, port=12345)
+        self.server = yield from domopyc_server.init(asyncio.get_event_loop(), mysql_pool=self.pool, port=12345, config=configparser.ConfigParser())
 
     @asyncio.coroutine
     def tearDown(self):

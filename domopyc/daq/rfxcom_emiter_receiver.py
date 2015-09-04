@@ -75,5 +75,5 @@ class RfxTrx433e(object):
 def create_rfxtrx433e(config):
     publisher = yield from create_publisher()
     subscriber = yield from create_subscriber()
-    return RfxTrx433e(config['rfxcom']['device'], publisher, subscriber.start())
+    return RfxTrx433e(config['device'], publisher, subscriber.start())
 

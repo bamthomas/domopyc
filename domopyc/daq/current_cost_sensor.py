@@ -25,7 +25,7 @@ def now():
     return datetime.now(tz=get_localzone())
 
 def create_current_cost(redis_connection, config):
-    serial_drv = serial.Serial(config['current_cost']['device'], baudrate=57600,
+    serial_drv = serial.Serial(config['device'], baudrate=57600,
                                    bytesize=serial.EIGHTBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE,
                                    timeout=10)
     LOGGER.info("create reader")
