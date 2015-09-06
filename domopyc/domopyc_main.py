@@ -34,7 +34,7 @@ def run_application(mysq_pool, config):
 
 if __name__ == '__main__':
     config = configparser.ConfigParser()
-    config.read(os.path.dirname(__file__) + '/web/static/domopyc.conf')
+    config.read(os.path.dirname(__file__) + '/domopyc.conf')
 
     sslcontext = None
     if 'sslcontext' in config:
