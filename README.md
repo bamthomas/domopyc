@@ -47,16 +47,17 @@ pip install domopyc-1.0b17.tar.gz
 Then I run the main script with supervisor cf [supervisord.conf](install/supervisord.conf), and I start supervisord with init script cf https://github.com/Supervisor/initscripts.
 
 ## adding a user
-'''
+
+```
 # in a python shell
 In [4]: hashlib.sha224('my_pass'.encode()).hexdigest()
 Out[4]: '0c65c07645b657df12081b26cb954e0f2e3a5ef27755d03090b7bbdc'
-'''
+```
 Then in the domopyc config file, add or update the users section :
-'''
+```
 [users]
 my_user=0c65c07645b657df12081b26cb954e0f2e3a5ef27755d03090b7bbdc
-'''
+```
 
 # Architecture
 
