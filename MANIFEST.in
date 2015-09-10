@@ -1,2 +1,3 @@
+include domopyc/domopyc.conf
 recursive-include domopyc/web/static *.*
 recursive-include domopyc/web/templates *.j2
