@@ -5,7 +5,6 @@ import logging
 from logging.handlers import SysLogHandler
 import xml.etree.cElementTree as ET
 
-from serial import FileLike
 import serial
 from tzlocal import get_localzone
 from domopyc.daq.publishers.redis_publisher import create_redis_connection, RedisPublisher
@@ -31,7 +30,7 @@ def create_current_cost(redis_connection, config):
     LOGGER.info("create reader")
     return AsyncCurrentCostReader(serial_drv, RedisPublisher(redis_connection, CURRENT_COST_KEY))
 
-class AsyncCurrentCostReader(FileLike):
+class AsyncCurrentCostReader(object):
 
     def __init__(self, drv, publisher, event_loop=asyncio.get_event_loop()):
         super().__init__()
@@ -41,7 +40,7 @@ class AsyncCurrentCostReader(FileLike):
         self.event_loop.add_reader(self.serial_drv.fd, self.read_callback)
 
     def read_callback(self):
-        line = self.readline().decode().strip()
+        line = self.serial_drv.readline().decode().strip()
         LOGGER.debug('line : %s' % line)
         if line:
             try:

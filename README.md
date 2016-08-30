@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/bamthomas/DomoPyc.png)](https://travis-ci.org/bamthomas/DomoPyc)
+[![Build Status](https://travis-ci.org/bamthomas/domopyc.png)](https://travis-ci.org/bamthomas/domopyc)
 # Goal
 
 This is a framework start, utilities to build a backend for a domotic application.
