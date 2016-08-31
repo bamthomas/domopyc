@@ -2,7 +2,6 @@
 import asyncio
 from asyncio import Queue
 from socket import socketpair
-import functools
 
 
 class DummySerial(object):

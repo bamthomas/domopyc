@@ -14,13 +14,14 @@ from domopyc.web.keep_alive_service import KeepAliveService
 @asyncio.coroutine
 def create_mysql_pool(config):
     mysql_pool = yield from aiomysql.create_pool(host=config['host'], port=int(config['port']),
-                                               user=config['user'], password=config['password'], db=config['db'],
-                                               loop=asyncio.get_event_loop())
+                                                 user=config['user'], password=config['password'], db=config['db'],
+                                                 loop=asyncio.get_event_loop())
     return mysql_pool
+
 
 @asyncio.coroutine
 def run_application(mysq_pool, config):
-     # backend
+    # backend
     redis_pool_ = yield from create_redis_pool()
     daq_rfxcom = yield from create_rfxtrx433e(config['rfxcom'])
     current_cost = create_current_cost(redis_pool_, config['current_cost'])
