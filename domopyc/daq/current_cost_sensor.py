@@ -37,8 +37,6 @@ def create_serial_factory(config):
 
 
 class AsyncCurrentCostReader(object):
-    RECONNECT_TIMEOUT_SECONDS = 500
-
     def __init__(self, drv_factory, publisher, event_loop=asyncio.get_event_loop(), connection_delay_seconds=1):
         self.connection_delay_seconds = connection_delay_seconds
         self.event_loop = event_loop
