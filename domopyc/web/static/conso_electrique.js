@@ -180,8 +180,7 @@ var power = (function () {
     }
 
     function createDayChart(selector, date, jsonData) {
-        var max_power = Math.max(_.map(jsonData, function (date_and_power) { return date_and_power[1]; }));
-        $(selector).highcharts({
+        var highcharts_settings = {
             chart: {
                 zoomType: 'x'
             },
@@ -191,7 +190,12 @@ var power = (function () {
             plotOptions: {
                 areaspline: {
                     fillColor: {
-                        linearGradient: {x1: 0, y1: 0, x2: 0, y2: 1},
+                        linearGradient: {
+                            x1: 0,
+                            y1: 0,
+                            x2: 0,
+                            y2: 1
+                        },
                         stops: [
                             [0, Highcharts.getOptions().colors[0]],
                             [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
@@ -216,18 +220,7 @@ var power = (function () {
                     }
                 },
                 alternateGridColor: '#FAFAFA',
-                minorGridLineWidth: 0,
-                plotLines: [
-                    {
-                        value: max_power,
-                        color: 'red',
-                        dashStyle: 'shortdash',
-                        width: 2,
-                        label: {
-                            text: 'maximum ' + max_power + 'w'
-                        }
-                    }
-                ]
+                minorGridLineWidth: 0
             }, {
                 labels: {
                     format: '{value}°C',
@@ -288,7 +281,8 @@ var power = (function () {
                     enabled: true
                 }
             }
-        });
+        };
+        $(selector).highcharts(highcharts_settings);
     }
 
     function get_time_format(moment_duration) {
@@ -300,6 +294,12 @@ var power = (function () {
             return 'W';
         }
         else return 'L';
+    }
+
+    function datify(date_data_serie, data_index) {
+        return _.map(date_data_serie, function (date_data) {
+            return [Date.parse(date_data[0]), date_data[data_index]];
+        });
     }
 
     return {
@@ -315,11 +315,7 @@ var power = (function () {
             $(".day_navigation").hide();
             $(".cost_period").hide();
             $.getJSON('/power/history', function (json) {
-                var dataWithDates = [];
-                _(json.data).forEach(function (point) {
-                    dataWithDates.push([Date.parse(point[0]), point[1]]);
-                });
-                createHistoryChart('#chart', dataWithDates);
+                createHistoryChart('#chart', datify(json.data, 1));
             });
         },
         day: function () {
@@ -328,21 +324,13 @@ var power = (function () {
         by_day: function (date) {
             $(".day_navigation").show();
             $(".cost_period").hide();
-            $.getJSON('/power/day/' + date.format(), function (json) {
-                var powerWithDates = [];
-                var tempWithDates = [];
-                _(json.day_data).forEach(function (point) {
-                    var point_date = Date.parse(point[0]);
-                    powerWithDates.push([point_date, point[1]]);
-                    tempWithDates.push([point_date, point[2]]);
+            $.getJSON('/power/day/' + date.format('YYYY-MM-DDTHH:mm:ss'), function (json) {
+                var previous_day_serie = _.map(json.previous_day_data, function (point) {
+                    return [Date.parse(point[0]) + 3600 * 24 * 1000, point[1]];
                 });
-                var previous_day_serie = [];
-                _(json.previous_day_data).forEach(function (point) {
-                    this.push([Date.parse(point[0]) + 3600 * 24 * 1000, point[1]]);
-                }, previous_day_serie);
                 createDayChart('#chart', date, {
-                    "power": powerWithDates,
-                    "temperature": tempWithDates,
+                    "power": datify(json.day_data, 1),
+                    "temperature": datify(json.day_data, 2),
                     "previous": previous_day_serie
                 });
             });
@@ -350,7 +338,7 @@ var power = (function () {
         costs: function (duration) {
             $(".day_navigation").hide();
             $(".cost_period").show();
-            $.getJSON('/power/costs/' + moment().add(-duration).format(), function (json) {
+            $.getJSON('/power/costs/' + moment().add(-duration).format('YYYY-MM-DDTHH:mm:ss'), function (json) {
                 var categories = _(json.data).map(function (item) {return moment(item[0]).format(get_time_format(duration)); });
                 var full_hours = _(json.data).map(function (item) {return item[1][0]; });
                 var empty_hours = _(json.data).map(function (item) {return item[1][1]; });
