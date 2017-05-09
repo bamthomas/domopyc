@@ -179,13 +179,13 @@ var power = (function () {
         });
     }
 
-    function createDayChart(selector, date, jsonData) {
+    function createDayChart(selector, jsonData) {
         var highcharts_settings = {
             chart: {
                 zoomType: 'x'
             },
             title: {
-                text: 'Consommation électrique du ' + date.format('LL')
+                text: null
             },
             plotOptions: {
                 areaspline: {
@@ -324,11 +324,12 @@ var power = (function () {
         by_day: function (date) {
             $(".day_navigation").show();
             $(".cost_period").hide();
+            $('#chart_title').text('Consommation électrique du ' + date.format('LL'));
             $.getJSON('/power/day/' + date.format('YYYY-MM-DDTHH:mm:ss'), function (json) {
                 var previous_day_serie = _.map(json.previous_day_data, function (point) {
                     return [Date.parse(point[0]) + 3600 * 24 * 1000, point[1]];
                 });
-                createDayChart('#chart', date, {
+                createDayChart('#chart', {
                     "power": datify(json.day_data, 1),
                     "temperature": datify(json.day_data, 2),
                     "previous": previous_day_serie
@@ -356,6 +357,7 @@ var power = (function () {
             }
         },
         real_time: function () {
+            $(".day_navigation").hide();
             $(".cost_period").hide();
             socket = new WebSocket("wss://" + window.location.host + "/livedata/power");
             var chart = new Highcharts.Chart({
