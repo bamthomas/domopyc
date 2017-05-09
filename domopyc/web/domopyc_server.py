@@ -45,7 +45,7 @@ def stream(request):
     subscriber = yield from redis_pool.start_subscribe()
     yield from subscriber.subscribe([CURRENT_COST_KEY])
     ws = WebSocketResponse()
-    ws.start(request)
+    yield from ws.prepare(request)
     continue_loop = True
     while continue_loop:
         reply = yield from subscriber.next_published()
