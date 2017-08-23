@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '1.0b30'
+version = '1.0b31'
 
 install_requires = [
     'setuptools',
@@ -9,8 +9,8 @@ install_requires = [
     'iso8601',
     'tzlocal',
     'aiomysql',
-    'aiohttp',
-    'aiohttp_jinja2',
+    'aiohttp==0.22.5',
+    'aiohttp-jinja2==0.8.0'
     ]
 
 test_requires = [
